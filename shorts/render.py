@@ -134,7 +134,13 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
             d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
             y += lh
         # 選択肢
-        cf = ImageFont.truetype(font_path, 66)
+        badge = scene.badge or "正解"
+        room = (cx1 - 50) - (cx0 + 50) - 120 - (ImageFont.truetype(font_path, 66).getlength(badge) + 30 if scene.reveal else 0)
+        size = 66
+        while size > 40 and max(ImageFont.truetype(font_path, size).getlength(c) for c in scene.choices) > room:
+            size -= 2
+        cf = ImageFont.truetype(font_path, size)
+        bf = ImageFont.truetype(font_path, 66)
         row_h, gap_y = 100, 22
         top = cy0 + 360
         for i, ch in enumerate(scene.choices):
@@ -143,7 +149,7 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
             if scene.reveal and i == scene.answer:
                 d.rounded_rectangle(box, radius=56, fill=(34, 197, 94))
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(255, 255, 255), anchor="lm")
-                d.text((box[2] - 60, y0 + row_h / 2), "正解", font=cf, fill=(255, 255, 255), anchor="rm")
+                d.text((box[2] - 60, y0 + row_h / 2), badge, font=bf, fill=(255, 255, 255), anchor="rm")
             elif scene.reveal:
                 d.rounded_rectangle(box, radius=56, fill=(229, 231, 235))
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(160, 160, 170), anchor="lm")

@@ -17,6 +17,7 @@ class Scene:
     answer: int | None = None    # 正解の番号（reveal のとき強調）
     reveal: bool = False         # 正解発表シーンか
     countdown: int | None = None # カウントダウン表示（3,2,1）
+    badge: str = ""              # reveal のとき正解の選択肢の右に出す文字（既定: 正解）
 
 
 @dataclass

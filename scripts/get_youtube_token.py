@@ -14,7 +14,9 @@ from pathlib import Path
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# upload: 動画の投稿 / force-ssl: コメントの読み書き（みんなの裁判の投票集計に使う）
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload",
+          "https://www.googleapis.com/auth/youtube.force-ssl"]
 
 path = Path(sys.argv[1] if len(sys.argv) > 1 else "client_secret.json")
 if not path.exists():

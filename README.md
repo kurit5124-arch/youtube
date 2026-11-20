@@ -66,6 +66,38 @@ Google の審査（API 監査）を通していないプロジェクトから AP
 
 無料枠は 1 日 10,000 ユニットで、1 回の投稿は約 1,600 ユニット（1日数本まで OK）です。
 
+## ⚖️ みんなの裁判（視聴者がコメントで判決を出すシリーズ）
+
+正解のない架空のトラブルを毎日1件出し、視聴者がコメントで **A（原告の勝ち）か B（被告の勝ち）** に投票します。
+次の回の冒頭で前回の判決（票の割合と、コメントから選んだ意見）を発表するので、毎回続けて見てもらえる作りです。
+
+```
+前回の動画のコメントを集計 ──▶ 新しい事件を作る ──▶ 「前回の判決」＋「今回の事件」の動画 ──▶ 投稿
+ YouTube Data API              Claude API（無ければ手持ち）   Edge TTS + Pillow + ffmpeg        ＋投票案内コメント
+                                                                                              ＋履歴をコミット
+```
+
+- **毎日 18:40（日本時間）** に `.github/workflows/saiban.yml` が自動で動き、19時ごろに投稿されます
+- 手動実行: **Actions → みんなの裁判を作って投稿 → Run workflow**
+- 自分の PC で試す: `python saiban.py`（動画を作るだけ）／ `python saiban.py --upload`（投稿まで）
+
+### 追加で必要な設定
+
+1. **コメント権限付きのトークンを取り直す**（投票の集計と案内コメントに必要）
+   `python scripts/get_youtube_token.py` をもう一度実行し、表示された `YT_REFRESH_TOKEN` で Secrets を上書きしてください。
+   取り直さなくても投稿はできますが、判決発表と案内コメントは飛ばされます。
+2. **（任意）`ANTHROPIC_API_KEY` を Secrets に登録**すると、Claude が毎回新しい事件を作り、コメントから紹介する意見も選びます。
+   無ければ `saiban/cases.yaml` の手持ちの事件（10件）を順番に使います。手持ちは書き足せます。
+   費用の目安は 1 本あたり数円〜十数円です（`config.yaml` の `saiban.model` / `effort` で調整）。
+   安全フィルターで断られたときは、別のモデルで自動的にやり直す設定にしています。
+
+### 注意
+- **動画が「公開」でないとコメントが付かず、投票できません。** 審査前の API プロジェクトから投稿すると強制的に非公開になるので、
+  その場合は YouTube Studio で公開してください（上の「公開設定について」を参照）
+- 投票は 1 人 1 票（最初のコメントを採用）。「A」「B」「原告」「被告」のどれか一方だけを含むコメントを数えます
+- 事件はすべてフィクションで、説明文に断り書きを自動で入れています
+- 投稿した事件と票数は `saiban/history.json` に記録され、ワークフローが自動でコミットします
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -90,7 +122,12 @@ shorts/wikitext.py          Wikipedia の文章の整形
 shorts/tts.py               音声合成（Edge TTS）
 shorts/render.py            スライド描画と動画化（Pillow + ffmpeg）
 shorts/pipeline.py          全体の流れ
-shorts/upload.py            YouTube 投稿
+shorts/upload.py            YouTube 投稿・コメントの読み書き
+shorts/saiban.py            みんなの裁判（事件づくり・投票集計・台本）
+saiban.py                   みんなの裁判の実行の入口
+saiban/cases.yaml           みんなの裁判の手持ちの事件
+saiban/history.json         投稿した事件と判決の記録
 scripts/get_youtube_token.py  投稿用トークン取得
 .github/workflows/daily-short.yml  毎日の自動実行
+.github/workflows/saiban.yml       みんなの裁判の毎日の自動実行
 ```

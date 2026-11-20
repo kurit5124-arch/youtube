@@ -1,0 +1,88 @@
+name: みんなの裁判を作って投稿
+
+on:
+  schedule:
+    # 毎日 18:40 (日本時間) = 09:40 (UTC) に作り始め、19時ごろに投稿される
+    - cron: "40 9 * * *"
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "YouTube に投稿する"
+        type: boolean
+        default: true
+      stock:
+        description: "Claude を使わず手持ちの事件（saiban/cases.yaml）を使う"
+        type: boolean
+        default: false
+
+concurrency:
+  group: saiban
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # saiban/history.json を更新してコミットするため
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Tokyo
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: ffmpeg と日本語フォントを入れる
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-noto-cjk fonts-noto-cjk-extra
+
+      - name: Python ライブラリを入れる
+        run: pip install -r requirements.txt
+
+      - name: 判決を集計して、新しい事件の動画を作る（＋投稿）
+        env:
+          IN_UPLOAD: ${{ inputs.upload }}
+          IN_STOCK: ${{ inputs.stock }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          ARGS=()
+          [ "$IN_STOCK" = "true" ] && ARGS+=(--stock)
+          [ -z "$ANTHROPIC_API_KEY" ] && echo "::notice::ANTHROPIC_API_KEY が無いので手持ちの事件を使います"
+          if [ "$EVENT" = "schedule" ] || [ "$IN_UPLOAD" = "true" ]; then
+            if [ -n "$YT_REFRESH_TOKEN" ]; then
+              ARGS+=(--upload)
+            else
+              echo "::warning::YouTube の Secrets が未設定なので、動画ファイルだけ作ります"
+            fi
+          fi
+          python saiban.py "${ARGS[@]}"
+
+      - name: 事件と判決の記録をコミット
+        run: |
+          if [ -n "$(git status --porcelain saiban/history.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add saiban/history.json
+            git commit -m "みんなの裁判: 事件と判決の記録を更新"
+            git pull --rebase
+            git push
+          fi
+
+      - name: 動画ファイルを保存（Actions の画面からダウンロード可）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: saiban-${{ github.run_number }}
+          path: |
+            output/*.mp4
+            output/*.json
+          retention-days: 14

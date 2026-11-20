@@ -37,3 +37,14 @@ upload:
   privacy: public
   category_id: 27        # 27=教育, 24=エンタメ, 22=ブログ
   made_for_kids: false
+
+# ===== みんなの裁判（python saiban.py）=====
+saiban:
+  model: claude-opus-5-5   # 事件を作る Claude のモデル（ANTHROPIC_API_KEY があるときだけ使用）
+  effort: medium           # low / medium / high（高いほど丁寧だが費用が増える）
+  max_case_chars: 300      # 事件の読み上げの合計文字数の上限（1分に収めるため）
+  max_seconds: 59          # 判決発表＋事件の合計の目安
+  min_hours: 12            # 前回の投稿からこれだけ時間がたっていたら判決を集計する
+  min_votes: 1             # これより票が少なければ判決発表を入れない
+  cases: saiban/cases.yaml     # 手持ちの事件
+  history: saiban/history.json # 投稿した事件と判決の記録（自動で更新・コミットされる）
