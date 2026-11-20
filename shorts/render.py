@@ -126,21 +126,53 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         d.text((W // 2, cy0), scene.label, font=lf, fill=(20, 20, 30), anchor="mm")
 
     big = scene.kind in ("hook", "outro")
-    font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, cy1 - cy0 - 180,
-                               start=118 if big else 84)
-    y = (cy0 + cy1) / 2 - (len(lines) - 1) * lh / 2 + 10
-    for line in lines:
-        d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
-        y += lh
+    if scene.choices:
+        # 問題文（カード上部）
+        font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 100, 270, start=68, minimum=36)
+        y = cy0 + 75 + (270 - len(lines) * lh) / 2 + lh / 2
+        for line in lines:
+            d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
+            y += lh
+        # 選択肢
+        cf = ImageFont.truetype(font_path, 66)
+        row_h, gap_y = 100, 22
+        top = cy0 + 360
+        for i, ch in enumerate(scene.choices):
+            y0 = top + i * (row_h + gap_y)
+            box = [cx0 + 50, y0, cx1 - 50, y0 + row_h]
+            if scene.reveal and i == scene.answer:
+                d.rounded_rectangle(box, radius=56, fill=(34, 197, 94))
+                d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(255, 255, 255), anchor="lm")
+                d.text((box[2] - 60, y0 + row_h / 2), "正解", font=cf, fill=(255, 255, 255), anchor="rm")
+            elif scene.reveal:
+                d.rounded_rectangle(box, radius=56, fill=(229, 231, 235))
+                d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(160, 160, 170), anchor="lm")
+            else:
+                d.rounded_rectangle(box, radius=56, fill=(243, 244, 246), outline=accent, width=6)
+                d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(25, 25, 35), anchor="lm")
+    else:
+        font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, cy1 - cy0 - 180,
+                                   start=118 if big else 84)
+        y = (cy0 + cy1) / 2 - (len(lines) - 1) * lh / 2 + 10
+        for line in lines:
+            d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
+            y += lh
 
-    # 何枚目かのドット（下部はショートのUIで隠れるので少し上に）
-    dot_y = 1480
-    gap = 44
-    x0 = W / 2 - (total - 1) * gap / 2
-    for i in range(total):
-        r = 13 if i == idx else 9
-        col = accent + (255,) if i == idx else (255, 255, 255, 120)
-        d.ellipse([x0 + i * gap - r, dot_y - r, x0 + i * gap + r, dot_y + r], fill=col)
+    if scene.countdown:
+        # カウントダウンの数字（カードの下）
+        r = 95
+        d.ellipse([W / 2 - r, 1500 - r, W / 2 + r, 1500 + r], fill=accent, outline=(255, 255, 255), width=8)
+        d.text((W // 2, 1500), str(scene.countdown), font=ImageFont.truetype(font_path, 130),
+               fill=(20, 20, 30), anchor="mm")
+    elif total <= 10:
+        # 何枚目かのドット（下部はショートのUIで隠れるので少し上に）
+        dot_y = 1480
+        gap = 44
+        x0 = W / 2 - (total - 1) * gap / 2
+        for i in range(total):
+            r = 13 if i == idx else 9
+            col = accent + (255,) if i == idx else (255, 255, 255, 120)
+            d.ellipse([x0 + i * gap - r, dot_y - r, x0 + i * gap + r, dot_y + r], fill=col)
 
     img.convert("RGB").save(out)
 

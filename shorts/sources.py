@@ -77,6 +77,8 @@ def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> Vid
     picked.sort()
 
     md = f"{date.month}月{date.day}日"
+    if tc.get("format", "quiz") == "quiz":
+        return _quiz_today(date, md, picked, obs if tc.get("include_observance", True) else [], cfg, rng)
     scenes = [Scene(kind="hook", label="TODAY", text=f"{md}は\n何の日？",
                     narration=f"今日、{md}は何の日？思わず話したくなる出来事を紹介します。")]
 
@@ -108,6 +110,74 @@ def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> Vid
         title=f"【今日は何の日】{md}に起きた出来事 #shorts",
         description="\n".join(lines),
         tags=["今日は何の日", md, "雑学", "歴史", "shorts"],
+        seed=date.toordinal(),
+    )
+
+
+def _year_str(y: int) -> str:
+    return f"紀元前{-y}年" if y < 0 else f"{y}年"
+
+
+def _year_choices(y: int, rng: random.Random, this_year: int) -> tuple[list[int], int]:
+    """正解の年 y と、それっぽいハズレ2つを作る。"""
+    age = this_year - y
+    step = 5 if age < 60 else 10 if age < 200 else 25
+    offsets = [k * step for k in range(-4, 5) if k != 0]
+    rng.shuffle(offsets)
+    wrong: list[int] = []
+    for o in offsets:
+        c = y + o
+        if c <= this_year and c != y and c not in wrong and (y < 0) == (c < 0):
+            wrong.append(c)
+        if len(wrong) == 2:
+            break
+    years = sorted([y] + wrong)
+    return years, years.index(y)
+
+
+LETTERS = "ABC"
+
+
+def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
+    hook_narr = f"今日、{md}は"
+    if obs:
+        hook_narr += f"{obs[0][0]}。そんな今日起きた出来事、何年か当てられる？"
+    else:
+        hook_narr += "何の日？今日起きた出来事、何年か当てられる？"
+    scenes = [Scene(kind="hook", label="3択クイズ", text="何年の\n出来事か\nわかる？", narration=hook_narr)]
+
+    answers = []
+    for n, (y, t) in enumerate(picked, 1):
+        years, ans = _year_choices(y, rng, date.year)
+        choices = [f"{LETTERS[i]}  {_year_str(v)}" for i, v in enumerate(years)]
+        t = t.rstrip("。")
+        q = Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices,
+                  narration=_sentence(f"第{n}問。{t}") + "これは何年の出来事？")
+        scenes.append(q)
+        for c in (3, 2, 1):
+            scenes.append(Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices,
+                                countdown=c, narration=""))
+        scenes.append(Scene(kind="item", group=n, label="正解！", text=t, choices=choices, answer=ans,
+                            reveal=True, narration=f"正解は、{LETTERS[ans]}、{_year_str(y)}でした！"))
+        answers.append((y, t))
+
+    scenes.append(Scene(kind="outro", label="SEE YOU", text="何問わかった？\nコメントで\n教えてね！",
+                        narration=cfg.get("quiz_outro_narration",
+                                          "何問わかったか、コメントで教えてね！チャンネル登録もよろしくお願いします。")))
+
+    lines = [f"{md}に起きた出来事、何年かわかる？3択クイズに挑戦！", "何問わかったかコメントで教えてね。", "",
+             "▼ 答え（ネタバレ注意）", "", "", ""]
+    if obs:
+        lines.append(f"■ 今日は「{obs[0][0]}」")
+    lines += [f"■ {_year_str(y)}：{t}" for y, t in answers]
+    lines += ["", f"出典：Wikipedia「{md}」 https://ja.wikipedia.org/wiki/{md}",
+              "（CC BY-SA 4.0 で提供されている文章をもとに作成しています）", "",
+              "#クイズ #今日は何の日 #雑学 #歴史 #shorts"]
+    return VideoPlan(
+        header="今日は何の日クイズ", subheader=md, scenes=scenes,
+        title=f"【3択クイズ】{md}の出来事、何年かわかる？ #shorts",
+        description="\n".join(lines),
+        tags=["クイズ", "3択クイズ", "今日は何の日", md, "雑学", "歴史", "shorts"],
         seed=date.toordinal(),
     )
 

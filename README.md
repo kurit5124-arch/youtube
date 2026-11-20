@@ -13,7 +13,7 @@ Wikipedia      自動      Edge TTS         Pillow + ffmpeg              YouTube
 
 | ネタ (`source`) | 内容 |
 |---|---|
-| `today` | Wikipedia「○月○日」から記念日＋歴史の出来事3つを選んで「今日は何の日？」動画 |
+| `today` | Wikipedia「○月○日」から出来事3つを選んで「何年？」3択クイズ動画（`config.yaml` の `today.format: list` で紹介形式に戻せます） |
 | `topics` | `topics.yaml` に書いた雑学ネタを日替わりで動画化 |
 | `auto`（既定） | まず `today`、失敗したら `topics` |
 
