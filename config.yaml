@@ -33,6 +33,6 @@ upload:
   # private / unlisted / public
   # ※ Google の審査を通していない API プロジェクトから投稿した動画は
   #    強制的に「非公開」になります（README 参照）
-  privacy: private
+  privacy: public
   category_id: 27        # 27=教育, 24=エンタメ, 22=ブログ
   made_for_kids: false
