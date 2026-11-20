@@ -20,6 +20,24 @@ async def _edge(text: str, out: Path, voice: str, rate: str, pitch: str) -> None
     await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(str(out))
 
 
+def _openjtalk(text: str, out: Path, speed: float) -> None:
+    """オフラインの音声合成（pip install pyopenjtalk-plus）。Edge TTS に繋がらないときの代わり。"""
+    import wave
+
+    import numpy as np
+    import pyopenjtalk
+
+    x, sr = pyopenjtalk.tts(text, speed=speed)
+    wav = out.with_suffix(".wav")
+    with wave.open(str(wav), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(np.clip(x, -32768, 32767).astype(np.int16).tobytes())
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-c:a", "libmp3lame", str(out)], check=True)
+    wav.unlink(missing_ok=True)
+
+
 def _silent(text: str, out: Path) -> None:
     secs = max(1.5, len(text) * 0.13)
     subprocess.run(
@@ -45,6 +63,12 @@ def synthesize(text: str, out: Path, cfg: dict, allow_silent: bool = False) -> f
         else:
             raise RuntimeError("音声が空でした")
     except Exception as e:  # noqa: BLE001
+        try:
+            _openjtalk(text, out, float(vc.get("fallback_speed", 1.15)))
+            print(f"[warn] Edge TTS が使えないので Open JTalk で読み上げます ({type(e).__name__})")
+            return duration(out)
+        except ImportError:
+            pass
         if not allow_silent:
             raise RuntimeError(f"音声合成に失敗しました: {e}") from e
         print(f"[warn] 音声合成できないので無音で代用します ({type(e).__name__})")
