@@ -33,7 +33,7 @@ python main.py --date 2026-12-25   # 日付を指定
 ## 2. 毎日自動で動かす（GitHub Actions）
 
 このリポジトリを GitHub に置くだけで、`.github/workflows/daily-short.yml` が
-**毎日 15:40（日本時間）** に動画を作り始め、16時ごろに投稿されます。時刻は `cron` の行で変えられます。
+**毎日 6:40（日本時間）** に動画を作り始め、朝7時ごろに投稿されます。時刻は `cron` の行で変えられます。
 
 - 手動実行: GitHub の **Actions → 毎日ショート動画を作って投稿 → Run workflow**
 - できた動画は各実行ページの **Artifacts** からダウンロードできます
