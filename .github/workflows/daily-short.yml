@@ -2,8 +2,8 @@ name: 毎日ショート動画を作って投稿
 
 on:
   schedule:
-    # 毎日 18:13 (日本時間) = 09:13 (UTC)
-    - cron: "13 9 * * *"
+    # 毎日 16:30 (日本時間) = 07:30 (UTC)
+    - cron: "30 7 * * *"
   workflow_dispatch:
     inputs:
       source:
