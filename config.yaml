@@ -1,0 +1,37 @@
+# ===== ショート動画 自動生成の設定 =====
+
+# ネタの取り方
+#   auto   : Wikipedia「今日は何の日」→ 失敗したら topics.yaml
+#   today  : Wikipedia「今日は何の日」だけ
+#   topics : topics.yaml の雑学ネタ（日替わり）
+source: auto
+timezone: Asia/Tokyo
+
+# 読み上げ音声（Edge TTS・無料）
+#   女性: ja-JP-NanamiNeural  男性: ja-JP-KeitaNeural
+voice:
+  name: ja-JP-NanamiNeural
+  rate: "+15%"     # 話す速さ
+  pitch: "+0Hz"
+
+max_seconds: 58      # ショートに収めるための最大秒数（超えたら項目を減らす）
+scene_gap: 0.35      # シーン間の間（秒）
+bgm_dir: assets/bgm  # ここに mp3 を置くと BGM として使う（著作権フリーのものを）
+bgm_volume: 0.12
+# font: assets/fonts/YourFont.ttf   # 好きなフォントを使う場合
+
+outro_narration: 明日もお楽しみに！チャンネル登録よろしくお願いします。
+
+today:
+  num_events: 3          # 紹介する出来事の数
+  include_observance: true  # 記念日も紹介する
+  min_year: 1600         # これより古い出来事は基本的に選ばない
+  max_chars: 60          # 1項目の最大文字数
+
+upload:
+  # private / unlisted / public
+  # ※ Google の審査を通していない API プロジェクトから投稿した動画は
+  #    強制的に「非公開」になります（README 参照）
+  privacy: private
+  category_id: 27        # 27=教育, 24=エンタメ, 22=ブログ
+  made_for_kids: false
