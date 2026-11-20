@@ -14,18 +14,28 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
     max_len = float(cfg.get("max_seconds", 58))
     gap = float(cfg.get("scene_gap", 0.35))
 
-    # 1) 音声。長すぎたら item シーンを後ろから削る
+    # 1) 音声。長すぎたら item シーン（クイズなら1問まるごと）を後ろから削る
     audios: list[tuple[Path, float]] = []
     for i, s in enumerate(plan.scenes):
         a = workdir / f"voice_{i:02d}.mp3"
-        audios.append((a, tts.synthesize(s.narration, a, cfg, allow_silent) + gap))
+        if s.countdown:
+            tts.tick(a, high=s.countdown == 1)
+            audios.append((a, 1.0))
+        elif s.reveal:
+            dur = tts.synthesize(s.narration, a, cfg, allow_silent)
+            tts.prepend_chime(a)
+            audios.append((a, dur + 0.6 + gap + 0.5))  # 正解を見せる時間を少し長めに
+        else:
+            audios.append((a, tts.synthesize(s.narration, a, cfg, allow_silent) + gap))
     while sum(d for _, d in audios) > max_len:
         items = [i for i, s in enumerate(plan.scenes) if s.kind == "item"]
-        if len(items) <= 1:
+        groups = sorted({plan.scenes[i].group for i in items})
+        if len(items) <= 1 or (groups != [0] and len(groups) <= 1):
             break
-        drop = items[-1]
-        print(f"[info] {max_len}秒に収めるため「{plan.scenes[drop].text[:15]}…」を外します")
-        del plan.scenes[drop], audios[drop]
+        drop = [i for i in items if plan.scenes[i].group == groups[-1]] if groups != [0] else [items[-1]]
+        print(f"[info] {max_len}秒に収めるため「{plan.scenes[drop[0]].text[:15]}…」を外します")
+        for i in reversed(drop):
+            del plan.scenes[i], audios[i]
 
     # 2) スライド画像 + シーンごとの動画
     segs = []
@@ -33,7 +43,7 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
         img = workdir / f"scene_{i:02d}.png"
         render.draw_scene(plan, s, i, len(plan.scenes), font, img)
         seg = workdir / f"seg_{i:02d}.mp4"
-        render.render_segment(img, a, dur, seg)
+        render.render_segment(img, a, dur, seg, zoom=0.0 if s.choices else 0.06)
         segs.append(seg)
 
     # 3) 結合・BGM・プログレスバー

@@ -50,3 +50,32 @@ def synthesize(text: str, out: Path, cfg: dict, allow_silent: bool = False) -> f
         print(f"[warn] 音声合成できないので無音で代用します ({type(e).__name__})")
         _silent(text, out)
     return duration(out)
+
+
+def tick(out: Path, high: bool = False) -> None:
+    """カウントダウンの「ピッ」（1秒）。"""
+    f = 1320 if high else 880
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+         "-i", f"sine=frequency={f}:sample_rate=24000:duration=0.09",
+         "-af", "afade=t=out:st=0.03:d=0.06,volume=0.5,apad=whole_dur=1.0",
+         "-ac", "1", "-c:a", "libmp3lame", str(out)],
+        check=True,
+    )
+
+
+def prepend_chime(path: Path) -> None:
+    """正解発表の「ピンポン」を音声の頭に付ける（0.6秒）。"""
+    tmp = path.with_name(path.stem + "_c.mp3")
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error",
+         "-f", "lavfi", "-i", "sine=frequency=988:sample_rate=24000:duration=0.18",
+         "-f", "lavfi", "-i", "sine=frequency=784:sample_rate=24000:duration=0.42",
+         "-i", str(path),
+         "-filter_complex",
+         "[0]afade=t=out:st=0.1:d=0.08,volume=0.45[a];[1]afade=t=out:st=0.1:d=0.3,volume=0.45[b];"
+         "[2]aresample=24000,aformat=channel_layouts=mono[c];[a][b][c]concat=n=3:v=0:a=1[o]",
+         "-map", "[o]", "-c:a", "libmp3lame", str(tmp)],
+        check=True,
+    )
+    tmp.replace(path)
