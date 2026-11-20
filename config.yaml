@@ -17,7 +17,7 @@ voice:
 max_seconds: 58      # ショートに収めるための最大秒数（超えたら項目を減らす）
 scene_gap: 0.35      # シーン間の間（秒）
 bgm_dir: assets/bgm  # ここに mp3 を置くと BGM として使う（著作権フリーのものを）
-bgm_volume: 0.12
+bgm_volume: 0.15
 # font: assets/fonts/YourFont.ttf   # 好きなフォントを使う場合
 
 outro_narration: 明日もお楽しみに！チャンネル登録よろしくお願いします。
