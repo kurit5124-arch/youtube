@@ -63,7 +63,16 @@ def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> Vid
     min_year = tc.get("min_year", 1600)
     max_chars = tc.get("max_chars", 60)
 
-    good = [(y, _shorten(t, max_chars)) for y, t in events if y >= min_year and 6 <= len(t)]
+    quiz = tc.get("format", "quiz") == "quiz"
+    if quiz:
+        # クイズは3問を58秒に収めるため、1文目が短い出来事だけを使う
+        qmax = tc.get("quiz_max_chars", 36)
+        firsts = [(y, re.split(r"[。]", t)[0].strip()) for y, t in events]
+        good = [(y, t) for y, t in firsts if y >= min_year and 6 <= len(t) <= qmax]
+        if len(good) < 3:
+            good = [(y, t) for y, t in firsts if 6 <= len(t) <= qmax + 15]
+    else:
+        good = [(y, _shorten(t, max_chars)) for y, t in events if y >= min_year and 6 <= len(t)]
     if len(good) < 3:
         good = [(y, _shorten(t, max_chars)) for y, t in events]
     # 日本関連を少し優先しつつランダムに選ぶ
@@ -77,7 +86,7 @@ def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> Vid
     picked.sort()
 
     md = f"{date.month}月{date.day}日"
-    if tc.get("format", "quiz") == "quiz":
+    if quiz:
         return _quiz_today(date, md, picked, obs if tc.get("include_observance", True) else [], cfg, rng)
     scenes = [Scene(kind="hook", label="TODAY", text=f"{md}は\n何の日？",
                     narration=f"今日、{md}は何の日？思わず話したくなる出来事を紹介します。")]
@@ -163,7 +172,7 @@ def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
 
     scenes.append(Scene(kind="outro", label="SEE YOU", text="何問わかった？\nコメントで\n教えてね！",
                         narration=cfg.get("quiz_outro_narration",
-                                          "何問わかったか、コメントで教えてね！チャンネル登録もよろしくお願いします。")))
+                                          "何問わかった？コメントで教えてね！チャンネル登録もよろしく！")))
 
     lines = [f"{md}に起きた出来事、何年かわかる？3択クイズに挑戦！", "何問わかったかコメントで教えてね。", "",
              "▼ 答え（ネタバレ注意）", "", "", ""]

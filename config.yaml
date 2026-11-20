@@ -24,6 +24,7 @@ outro_narration: 明日もお楽しみに！チャンネル登録よろしくお
 
 today:
   format: quiz           # quiz = 3択「何年？」クイズ / list = 出来事の紹介
+  quiz_max_chars: 36     # クイズの問題文の最大文字数（長いと3問入らない）
   num_events: 3          # 紹介する出来事の数
   include_observance: true  # 記念日も紹介する
   min_year: 1600         # これより古い出来事は基本的に選ばない
