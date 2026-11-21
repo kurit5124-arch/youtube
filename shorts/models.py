@@ -36,3 +36,4 @@ class VideoPlan:
     style: str = "card"          # card = カード型 / documentary = ドキュメンタリー風
     bgm: str = ""                # 使う BGM のファイル名（空なら日替わり）
     category_id: int | None = None  # YouTube のカテゴリ（空なら config.yaml）
+    palette: int | None = None      # 配色を固定する（render.PALETTES の番号。空なら日替わり）

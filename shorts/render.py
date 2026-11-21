@@ -20,6 +20,7 @@ PALETTES = [
     ((12, 74, 110), (15, 23, 42), (56, 189, 248)),
     ((76, 29, 149), (190, 24, 93), (253, 224, 71)),
     ((17, 24, 39), (55, 65, 81), (244, 114, 182)),
+    ((15, 23, 42), (30, 41, 59), (148, 163, 184)),   # 6: 落ち着いた紺とグレー（社会派のテーマ向け）
 ]
 
 FONT_CANDIDATES = [
@@ -118,7 +119,8 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         from . import docstyle
         return docstyle.draw(plan, scene, idx, total, font_path, out)
     rng = random.Random(plan.seed)
-    top, bottom, accent = PALETTES[rng.randrange(len(PALETTES))]
+    pick = rng.randrange(len(PALETTES))
+    top, bottom, accent = PALETTES[plan.palette if plan.palette is not None else pick]
     img = _gradient(top, bottom).convert("RGBA")
 
     # 背景の飾り（ぼかした円）
@@ -254,4 +256,6 @@ def finalize(segments: list[Path], total: float, out: Path, bgm: Path | None, bg
 
 
 def accent_of(plan: VideoPlan):
+    if plan.palette is not None:
+        return PALETTES[plan.palette][2]
     return PALETTES[random.Random(plan.seed).randrange(len(PALETTES))][2]

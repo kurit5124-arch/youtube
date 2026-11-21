@@ -201,15 +201,21 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
 
     title = t["title"]
     hook = t.get("hook", f"{title}、知ってた？")
-    scenes = [Scene(kind="hook", label="雑学", text=t.get("hook_text", title), narration=_sentence(hook))]
+    scenes = [Scene(kind="hook", label=t.get("hook_label", "雑学"), text=t.get("hook_text", title),
+                    narration=_sentence(hook), emoji=t.get("hook_emoji", ""))]
     for n, p in enumerate(t["points"], 1):
         if isinstance(p, dict):
             text, narr = p["text"], p.get("narration", p["text"])
+            label, emoji = p.get("label", f"その{n}"), p.get("emoji", "")
         else:
             text = narr = str(p)
-        scenes.append(Scene(kind="item", label=f"その{n}", text=text, narration=_sentence(narr)))
-    scenes.append(Scene(kind="outro", label="SEE YOU", text=t.get("outro_text", "チャンネル登録\nしてね！"),
-                        narration=t.get("outro", cfg.get("outro_narration", "明日もお楽しみに！チャンネル登録よろしくお願いします。"))))
+            label, emoji = f"その{n}", ""
+        # keep: true の項目は、長すぎても外さない
+        kind = "case" if isinstance(p, dict) and p.get("keep") else "item"
+        scenes.append(Scene(kind=kind, label=label, text=text, narration=_sentence(narr), emoji=emoji))
+    scenes.append(Scene(kind="outro", label=t.get("outro_label", "SEE YOU"), text=t.get("outro_text", "チャンネル登録\nしてね！"),
+                        narration=t.get("outro", cfg.get("outro_narration", "明日もお楽しみに！チャンネル登録よろしくお願いします。")),
+                        emoji=t.get("outro_emoji", "")))
 
     tags = t.get("tags", ["雑学", "shorts"])
     desc = t.get("description") or "\n".join(
@@ -217,7 +223,8 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
         ["", " ".join("#" + x for x in tags)])
     return VideoPlan(header=t.get("header", "知ってた？"), subheader=title, scenes=scenes,
                      title=t.get("youtube_title", f"【雑学】{title} #shorts"),
-                     description=desc, tags=tags, seed=date.toordinal() + i)
+                     description=desc, tags=tags, seed=date.toordinal() + i,
+                     palette=t.get("palette"), category_id=t.get("category_id"))
 
 
 def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None) -> VideoPlan:

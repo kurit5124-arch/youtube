@@ -28,6 +28,7 @@ def main() -> int:
     ap.add_argument("--source", choices=["auto", "today", "topics"], help="ネタの取り方（既定: config.yaml）")
     ap.add_argument("--date", help="YYYY-MM-DD（既定: 日本時間の今日）")
     ap.add_argument("--topic-index", type=int, help="topics.yaml の何番目を使うか（0始まり）")
+    ap.add_argument("--topics-file", help="topics.yaml の代わりに使うネタ帳（例: discussions.yaml）")
     ap.add_argument("--upload", action="store_true", help="YouTube にアップロードする")
     ap.add_argument("--allow-silent", action="store_true", help="音声合成できないとき無音で続行（動作確認用）")
     ap.add_argument("--out", default="output", help="出力フォルダ")
@@ -42,6 +43,13 @@ def main() -> int:
     if args.wikitext_file:
         plan = sources.plan_today(date, cfg, Path(args.wikitext_file).read_text(encoding="utf-8"))
         source = "today"
+    elif args.topics_file:
+        source = "topics"
+        tf = ROOT / args.topics_file
+        topic = (yaml.safe_load(tf.read_text(encoding="utf-8")) or [])[args.topic_index or 0]
+        if topic.get("voice"):  # このネタだけ声を変える（例: 落ち着いたテーマは落ち着いた声）
+            cfg = {**cfg, "voice": {**cfg.get("voice", {}), **topic["voice"]}}
+        plan = sources.plan_topic(date, cfg, tf, args.topic_index)
     else:
         plan = sources.make_plan(source, date, cfg, ROOT, args.topic_index)
     print(f"[plan] {plan.title}")
