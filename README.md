@@ -73,6 +73,39 @@ Google の審査（API 監査）を通していないプロジェクトから AP
 - **`assets/bgm/`** … BGM。プログラムで作曲したオリジナル曲が3曲入っていて、日替わりで使われます。`python scripts/make_bgm.py` で作り直せます。好きな曲（著作権フリーのもの）の mp3 を置けば追加できます
 - **`shorts/render.py`** … 色・レイアウト（`PALETTES` で配色を追加）
 
+
+## 🎵 かっこいい音楽 × 動くイラスト（ミュージックビデオ）
+
+曲を自動作曲し、ネオン調のイラストを **音に合わせて動かす** MV を作ります。これも全部無料・オフラインで動きます。
+
+```bash
+python make_music_video.py                  # 作曲 → イラスト → 縦型MV（約1分・ショート向け）
+python make_music_video.py --seed 3         # 別の曲・別の景色
+python make_music_video.py --landscape      # 横型 1920x1080
+python make_music_video.py --title "MIDNIGHT RUN"
+python make_music_video.py --preview 8      # 最初の8秒だけ（確認用）
+```
+
+`output/` に mp4・mp3（曲だけ）・サムネイル jpg・タイトル/説明文の json ができます。
+
+- **曲**：128 BPM・Aマイナーのシンセウェーブ。イントロ → ビルド（ライザー・スネアロール）→ ドロップ → ブレイク → ドロップ2 の構成。
+  キックに合わせてベースが波打つ「サイドチェイン」入り。`--seed` を変えるとコード進行とメロディが変わります
+- **イラスト**：夕日・ワイヤーフレームの山・どこまでも続くグリッド・テールランプが光る車
+- **音への反応**：低音で太陽が脈打つ／キックで画面が寄る・車が弾む・テールランプが光る／
+  太陽のまわりのスペクトラムが音域ごとに伸びる／ドロップの瞬間にフラッシュ・揺れ・色ずれ／
+  盛り上がるほどグリッドと光の粒が速く流れる
+
+### 手持ちの曲・イラストを使う
+
+Suno などの AI 作曲サービスで作った曲や、画像生成 AI で描いたイラストも使えます（どんな音でも自動で解析して動かします）。
+
+```bash
+python make_music_video.py --audio my_song.mp3 --image my_art.png --title "MY SONG"
+```
+
+イラストはゆっくりパンしながら、低音で明るい部分が光り、下にスペクトラムバーが出ます。
+※ 他サービスの曲・画像は、そのサービスの利用規約（商用利用・YouTube 収益化の可否）を確認してください。
+
 ## 注意
 
 - 文章は Wikipedia（CC BY-SA 4.0）をもとにしているので、説明文に出典を自動で入れています。消さないでください
@@ -92,5 +125,10 @@ shorts/render.py            スライド描画と動画化（Pillow + ffmpeg）
 shorts/pipeline.py          全体の流れ
 shorts/upload.py            YouTube 投稿
 scripts/get_youtube_token.py  投稿用トークン取得
+make_music_video.py         ミュージックビデオを作る入口
+musicvideo/compose.py       自動作曲（シンセウェーブ）
+musicvideo/analyze.py       音の解析（低音・キック・スペクトラム）
+musicvideo/scene.py         イラストと音に合わせた動き
+musicvideo/render.py        並列描画と mp4 書き出し
 .github/workflows/daily-short.yml  毎日の自動実行
 ```
