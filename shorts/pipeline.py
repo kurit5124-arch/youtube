@@ -27,6 +27,11 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
             audios.append((a, dur + 0.6 + gap + 0.5))  # 正解を見せる時間を少し長めに
         else:
             audios.append((a, tts.synthesize(s.narration, a, cfg, allow_silent) + gap))
+    # 長すぎたら、まず「なくても成り立つ場面」（kind=optional）を外す
+    while sum(d for _, d in audios) > max_len and any(s.kind == "optional" for s in plan.scenes):
+        i = max(i for i, s in enumerate(plan.scenes) if s.kind == "optional")
+        print(f"[info] {max_len}秒に収めるため「{plan.scenes[i].label}」の場面を外します")
+        del plan.scenes[i], audios[i]
     while sum(d for _, d in audios) > max_len:
         items = [i for i, s in enumerate(plan.scenes) if s.kind == "item"]
         groups = sorted({plan.scenes[i].group for i in items})
@@ -40,10 +45,14 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
     # 2) スライド画像 + シーンごとの動画
     segs = []
     for i, (s, (a, dur)) in enumerate(zip(plan.scenes, audios)):
-        img = workdir / f"scene_{i:02d}.png"
-        render.draw_scene(plan, s, i, len(plan.scenes), font, img)
         seg = workdir / f"seg_{i:02d}.mp4"
-        render.render_segment(img, a, dur, seg, zoom=0.0 if s.choices else 0.06)
+        if plan.style == "anime":
+            from . import anime
+            anime.render_segment(plan, s, i, len(plan.scenes), font, a, dur, seg)
+        else:
+            img = workdir / f"scene_{i:02d}.png"
+            render.draw_scene(plan, s, i, len(plan.scenes), font, img)
+            render.render_segment(img, a, dur, seg, zoom=0.0 if s.choices else 0.06)
         segs.append(seg)
 
     # 3) 結合・BGM・プログレスバー

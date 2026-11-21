@@ -59,7 +59,7 @@ def _voicevox(text: str, out: Path, vc: dict) -> None:
     q = requests.post(f"{url}/audio_query", params={"text": text, "speaker": speaker}, timeout=60)
     q.raise_for_status()
     query = q.json()
-    query["speedScale"] = float(vc.get("speed", 1.15))
+    query["speedScale"] = float(vc.get("speed", 1.3))
     query["pitchScale"] = float(vc.get("pitch_scale", 0.0))
     query["intonationScale"] = float(vc.get("intonation", 1.2))
     query["volumeScale"] = float(vc.get("volume", 1.6))

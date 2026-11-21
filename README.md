@@ -120,6 +120,16 @@ note には公式の投稿 API が無いので、投稿は手作業です。
 - VOICEVOX が起動していないときは、自動で Edge TTS の声で作ります
 - **クレジット表記が必須**です。投稿時に説明文へ「音声：VOICEVOX:ずんだもん」を自動で入れています。消さないでください
 
+## アニメ風の画面（みんなの裁判）
+
+みんなの裁判は、1 フレームずつ描いた **動くアニメ風** の画面です（`config.yaml` の `saiban.style: anime`）。
+
+- 絵文字のキャラクター（白フチのステッカー）が、ずんだもんの声の大きさに合わせて弾んで「しゃべる」
+- 吹き出しの文字が 1 文字ずつ出る／集中線・ポップイン・画面の揺れ・「勝訴」のハンコ
+- 原告は左、被告は右に立って言い合う
+- 静止画のカード型に戻すときは `saiban.style: card`
+- 59 秒を超えそうなときは「みんなの声」の場面を自動で外します（note の記事には残ります）
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -143,6 +153,7 @@ shorts/sources.py           ネタ集め・台本作り
 shorts/wikitext.py          Wikipedia の文章の整形
 shorts/tts.py               音声合成（VOICEVOX / Edge TTS）
 shorts/render.py            スライド描画と動画化（Pillow + ffmpeg）
+shorts/anime.py             アニメ風の動く画面（みんなの裁判）
 shorts/pipeline.py          全体の流れ
 shorts/upload.py            YouTube 投稿・コメントの読み書き
 shorts/saiban.py            みんなの裁判（事件づくり・投票集計・台本）

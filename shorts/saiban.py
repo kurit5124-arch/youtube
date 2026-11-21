@@ -255,7 +255,7 @@ def verdict_scenes(prev: dict, v: Verdict) -> list[Scene]:
         if v.b_voice:
             lines.append(f"B派「{v.b_voice}」")
             said.append(f"{v.b_voice}、という声")
-        scenes.append(Scene(kind="verdict", label="みんなの声", text="\n\n".join(lines), emoji="💬",
+        scenes.append(Scene(kind="optional", label="みんなの声", text="\n\n".join(lines), emoji="💬",
                             narration="コメントでは、" + "や、".join(said) + "がありました。"))
     return scenes
 
@@ -287,7 +287,7 @@ def case_scenes(case: dict, no: int, outro: str = DEFAULT_OUTRO) -> list[Scene]:
 
 
 def build_plan(case: dict, no: int, date: dt.date, prev: dict | None, verdict: Verdict | None,
-               outro: str = DEFAULT_OUTRO) -> VideoPlan:
+               outro: str = DEFAULT_OUTRO, style: str = "card") -> VideoPlan:
     scenes = (verdict_scenes(prev, verdict) if prev and verdict else []) + case_scenes(case, no, outro)
     tags = ["みんなの裁判", "裁判", "あなたならどっち", "究極の選択", "shorts"]
     tags += [t for t in case.get("tags", []) if t not in tags]
@@ -311,7 +311,7 @@ def build_plan(case: dict, no: int, date: dt.date, prev: dict | None, verdict: V
     return VideoPlan(
         header="みんなの裁判", subheader=f"事件 No.{no}", scenes=scenes,
         title=f"【みんなの裁判】{case['title']} あなたならどっち？ #shorts",
-        description="\n".join(lines), tags=tags, seed=date.toordinal() * 7 + no,
+        description="\n".join(lines), tags=tags, seed=date.toordinal() * 7 + no, style=style,
     )
 
 

@@ -13,7 +13,7 @@ timezone: Asia/Tokyo
 voice:
   engine: voicevox
   speaker: ずんだもん   # ずんだもん / ずんだもん（あまあま）/ ずんだもん（ツンツン）/ 四国めたん / 春日部つむぎ など
-  speed: 1.15          # VOICEVOX の話す速さ（1.0 が標準）
+  speed: 1.3           # VOICEVOX の話す速さ（1.0 が標準）
   intonation: 1.2      # 抑揚の強さ（大きいほど感情豊か）
   volume: 1.6          # 声の大きさ（1.0 が標準）
   # 以下は Edge TTS 用（VOICEVOX が使えないときの代わりにも使います）
@@ -54,6 +54,7 @@ saiban:
   max_seconds: 59          # 判決発表＋事件の合計の目安
   min_hours: 12            # 前回の投稿からこれだけ時間がたっていたら判決を集計する
   min_votes: 1             # これより票が少なければ判決発表を入れない
+  style: anime             # anime = 動くアニメ風 / card = 静止画のカード型
   outro_narration: あなたの判決は？コメントにAかBで投票するのだ！結果は次回発表するのだ！
   cases: saiban/cases.yaml     # 手持ちの事件
   history: saiban/history.json # 投稿した事件と判決の記録（自動で更新・コミットされる）
