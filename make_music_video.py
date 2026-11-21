@@ -70,7 +70,8 @@ def main() -> int:
         "title": f"{args.title} | Synthwave Original Track",
         "description": (
             f"{args.title} — プログラムで自動作曲したオリジナルのシンセウェーブ曲と、"
-            "音に合わせて動くネオンのイラスト。\n\n#synthwave #retrowave #shorts"
+            "音に合わせて動くネオンのイラスト。\n\n#synthwave #retrowave"
+            + ("" if args.landscape else " #shorts")
         ),
         "tags": ["synthwave", "retrowave", "music visualizer", "original music", "neon"],
         "video": str(video),
