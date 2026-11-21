@@ -6,8 +6,10 @@
 from __future__ import annotations
 
 import datetime as dt
+import os
 import random
 import re
+import time
 from pathlib import Path
 
 import requests
@@ -17,7 +19,13 @@ from . import wikitext
 from .models import Scene, VideoPlan
 
 WIKI_API = "https://ja.wikipedia.org/w/api.php"
-USER_AGENT = "daily-shorts-generator/1.0 (https://github.com/)"
+WIKI_RAW = "https://ja.wikipedia.org/w/index.php"
+# Wikimedia の決まり: ボットは何者か・連絡先（URL）を名乗る
+USER_AGENT = os.environ.get(
+    "WIKI_USER_AGENT",
+    "DailyShortsQuizBot/1.1 (https://github.com/%s; automated daily quiz video) python-requests"
+    % os.environ.get("GITHUB_REPOSITORY", "kurit5124-arch/youtube"),
+)
 
 
 def _sentence(text: str) -> str:
@@ -37,17 +45,43 @@ def _shorten(text: str, limit: int) -> str:
 
 
 # ---------------------------------------------------------------- today
-def fetch_date_wikitext(date: dt.date) -> str:
+def fetch_date_wikitext(date: dt.date, attempts: int = 6) -> str:
+    """「○月○日」ページの本文を取る。混雑（429 など）なら待ってやり直す。"""
     page = f"{date.month}月{date.day}日"
-    r = requests.get(
-        WIKI_API,
-        params={"action": "parse", "page": page, "prop": "wikitext",
-                "format": "json", "formatversion": 2, "redirects": 1},
-        headers={"User-Agent": USER_AGENT},
-        timeout=30,
-    )
-    r.raise_for_status()
-    return r.json()["parse"]["wikitext"]
+    headers = {"User-Agent": USER_AGENT, "Api-User-Agent": USER_AGENT}
+    last: Exception | None = None
+    for n in range(attempts):
+        for how in ("api", "raw"):
+            try:
+                if how == "api":
+                    r = requests.get(WIKI_API, headers=headers, timeout=30, params={
+                        "action": "parse", "page": page, "prop": "wikitext", "format": "json",
+                        "formatversion": 2, "redirects": 1, "maxlag": 5})
+                    r.raise_for_status()
+                    data = r.json()
+                    if "parse" not in data:
+                        raise RuntimeError(data.get("error", data))
+                    return data["parse"]["wikitext"]
+                r = requests.get(WIKI_RAW, headers=headers, timeout=30,
+                                 params={"title": page, "action": "raw"})
+                r.raise_for_status()
+                if "== できごと ==" in r.text or "==できごと==" in r.text or "できごと" in r.text:
+                    return r.text
+                raise RuntimeError("ページの形式が想定と違います")
+            except Exception as e:  # noqa: BLE001
+                last = e
+                retry_after = 0
+                if isinstance(e, requests.HTTPError) and e.response is not None:
+                    try:
+                        retry_after = int(e.response.headers.get("Retry-After", "0"))
+                    except ValueError:
+                        retry_after = 0
+                print(f"[warn] Wikipedia 取得失敗 ({how}, {n + 1}回目): {e}")
+        if n < attempts - 1:
+            wait = max(retry_after, min(15 * 2 ** n, 90))
+            print(f"[info] {wait}秒待ってやり直します")
+            time.sleep(wait)
+    raise RuntimeError(f"Wikipedia から取得できませんでした: {last}")
 
 
 def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> VideoPlan:
