@@ -91,6 +91,17 @@ Google の審査（API 監査）を通していないプロジェクトから AP
    費用の目安は 1 本あたり数円〜十数円です（`config.yaml` の `saiban.model` / `effort` で調整）。
    安全フィルターで断られたときは、別のモデルで自動的にやり直す設定にしています。
 
+### note の記事も同時に作られます
+動画と同じ事件を、「考えるヒント」付きの読み物にした note 記事が `output/` に出力されます（Actions では Artifacts に入ります）。
+note には公式の投稿 API が無いので、投稿は手作業です。
+
+1. `*_note.html` をブラウザで開く
+2. 「① タイトルをコピー」→ note の「記事を書く」のタイトル欄に貼る
+3. 「② 本文をコピー」→ 本文欄に貼る（見出し・太字・箇条書きはそのまま入ります）
+4. 末尾のハッシュタグを note のハッシュタグ欄に入れて公開
+
+`--upload` で投稿したときは、記事内に動画の URL が自動で入ります。
+
 ### 注意
 - **動画が「公開」でないとコメントが付かず、投票できません。** 審査前の API プロジェクトから投稿すると強制的に非公開になるので、
   その場合は YouTube Studio で公開してください（上の「公開設定について」を参照）
@@ -125,7 +136,8 @@ shorts/pipeline.py          全体の流れ
 shorts/upload.py            YouTube 投稿・コメントの読み書き
 shorts/saiban.py            みんなの裁判（事件づくり・投票集計・台本）
 saiban.py                   みんなの裁判の実行の入口
-saiban/cases.yaml           みんなの裁判の手持ちの事件
+saiban/cases.yaml           みんなの裁判の手持ちの事件（note 用の「考えるヒント」付き）
+shorts/note.py              note の記事（md と貼り付け用 html）を作る
 saiban/history.json         投稿した事件と判決の記録
 scripts/get_youtube_token.py  投稿用トークン取得
 .github/workflows/daily-short.yml  毎日の自動実行

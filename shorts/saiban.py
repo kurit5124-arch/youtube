@@ -161,6 +161,11 @@ CASE_SYSTEM = """あなたは YouTube ショート「みんなの裁判」の脚
 def generate_case(cfg: dict, past: list[dict]) -> dict:
     props = {k: {"type": "string", "description": v} for k, v in CASE_FIELDS.items()}
     props["tags"] = {"type": "array", "items": {"type": "string"}, "description": "YouTube のタグ 3〜6個"}
+    props["hints"] = {
+        "type": "array", "description": "note の記事に載せる「考えるヒント」を3つ。どちらか一方に肩入れせず、判断が分かれる視点を示す",
+        "items": {"type": "object", "additionalProperties": False, "required": ["title", "text"],
+                  "properties": {"title": {"type": "string", "description": "見出し。20文字以内"},
+                                 "text": {"type": "string", "description": "説明。60〜100文字"}}}}
     schema = {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
 
     recent = past[-40:]

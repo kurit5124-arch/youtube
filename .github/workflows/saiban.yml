@@ -85,4 +85,6 @@ jobs:
           path: |
             output/*.mp4
             output/*.json
+            output/*_note.md
+            output/*_note.html
           retention-days: 14

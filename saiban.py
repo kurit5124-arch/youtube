@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
-from shorts import pipeline, upload
+from shorts import note, pipeline, upload
 from shorts import saiban as sb
 
 ROOT = Path(__file__).resolve().parent
@@ -89,6 +89,9 @@ def main() -> int:
     os.chdir(ROOT)
     pipeline.build_video(plan, cfg, Path(args.out) / "work" / name, out, allow_silent=args.allow_silent)
     print(f"[done] {out}")
+    np_prev, np_v = (prev, verdict) if show_verdict else (None, None)
+    ntitle, nmd = note.saiban_article(case, no, None, np_prev, np_v)
+    print(f"[note] {note.write(out.with_suffix(''), ntitle, nmd)[1]}")
 
     if not args.upload:
         return 0
@@ -99,6 +102,7 @@ def main() -> int:
     # 4) 投稿・案内コメント・履歴
     vid = upload.upload(out, plan, cfg)
     print(f"[uploaded] https://youtube.com/shorts/{vid}")
+    note.write(out.with_suffix(""), *note.saiban_article(case, no, vid, np_prev, np_v))  # 動画の URL 入りに更新
     try:
         upload.post_comment(vid, sb.vote_comment(case))
     except Exception as e:  # noqa: BLE001
