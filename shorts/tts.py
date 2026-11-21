@@ -62,6 +62,7 @@ def _voicevox(text: str, out: Path, vc: dict) -> None:
     query["speedScale"] = float(vc.get("speed", 1.15))
     query["pitchScale"] = float(vc.get("pitch_scale", 0.0))
     query["intonationScale"] = float(vc.get("intonation", 1.2))
+    query["volumeScale"] = float(vc.get("volume", 1.6))
     query["prePhonemeLength"] = 0.05
     query["postPhonemeLength"] = 0.1
     r = requests.post(f"{url}/synthesis", params={"speaker": speaker}, json=query, timeout=120)

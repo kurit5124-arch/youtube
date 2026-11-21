@@ -15,6 +15,7 @@ voice:
   speaker: ずんだもん   # ずんだもん / ずんだもん（あまあま）/ ずんだもん（ツンツン）/ 四国めたん / 春日部つむぎ など
   speed: 1.15          # VOICEVOX の話す速さ（1.0 が標準）
   intonation: 1.2      # 抑揚の強さ（大きいほど感情豊か）
+  volume: 1.6          # 声の大きさ（1.0 が標準）
   # 以下は Edge TTS 用（VOICEVOX が使えないときの代わりにも使います）
   name: ja-JP-NanamiNeural
   rate: "+15%"     # 話す速さ
