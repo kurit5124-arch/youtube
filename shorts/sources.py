@@ -162,19 +162,18 @@ def _year_str(y: int) -> str:
 
 
 def _year_choices(y: int, rng: random.Random, this_year: int) -> tuple[list[int], int]:
-    """正解の年 y と、それっぽいハズレ2つを作る。"""
+    """正解の年 y と、それっぽいハズレ2つを作る。正解の位置（A/B/C）もランダムにする。"""
     age = this_year - y
     step = 5 if age < 60 else 10 if age < 200 else 25
-    offsets = [k * step for k in range(-4, 5) if k != 0]
-    rng.shuffle(offsets)
-    wrong: list[int] = []
-    for o in offsets:
-        c = y + o
-        if c <= this_year and c != y and c not in wrong and (y < 0) == (c < 0):
-            wrong.append(c)
-        if len(wrong) == 2:
-            break
-    years = sorted([y] + wrong)
+    for pos in rng.sample([0, 1, 2], 3):  # 正解を A・B・C のどこに置くか（無理なら次の候補）
+        below = [y - k * step for k in rng.sample(range(1, 5), 4)]
+        above = [y + k * step for k in rng.sample(range(1, 5), 4) if y + k * step <= this_year]
+        below = [c for c in below if (y < 0) == (c < 0)]
+        need_below, need_above = pos, 2 - pos
+        if len(below) >= need_below and len(above) >= need_above:
+            years = sorted([y] + below[:need_below] + above[:need_above])
+            return years, years.index(y)
+    years = sorted([y, y - step, y - 2 * step])
     return years, years.index(y)
 
 
@@ -184,9 +183,9 @@ LETTERS = "ABC"
 def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
     hook_narr = f"今日、{md}は"
     if obs:
-        hook_narr += f"{obs[0][0]}。そんな今日起きた出来事、何年か当てられる？"
+        hook_narr += f"{obs[0][0]}。今日の出来事、何年かわかる？"
     else:
-        hook_narr += "何の日？今日起きた出来事、何年か当てられる？"
+        hook_narr += "何の日？今日の出来事、何年かわかる？"
     scenes = [Scene(kind="hook", label="3択クイズ", text="何年の\n出来事か\nわかる？", narration=hook_narr)]
 
     answers = []
@@ -195,7 +194,7 @@ def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
         choices = [f"{LETTERS[i]}  {_year_str(v)}" for i, v in enumerate(years)]
         t = t.rstrip("。")
         q = Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices,
-                  narration=_sentence(f"第{n}問。{t}") + "これは何年の出来事？")
+                  narration=_sentence(f"第{n}問。{t}") + "何年？")
         scenes.append(q)
         for c in (3, 2, 1):
             scenes.append(Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices,
@@ -206,7 +205,7 @@ def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
 
     scenes.append(Scene(kind="outro", label="SEE YOU", text="何問わかった？\nコメントで\n教えてね！",
                         narration=cfg.get("quiz_outro_narration",
-                                          "何問わかった？コメントで教えてね！チャンネル登録もよろしく！")))
+                                          "何問わかった？コメントで教えてね！")))
 
     lines = [f"{md}に起きた出来事、何年かわかる？3択クイズに挑戦！", "何問わかったかコメントで教えてね。", "",
              "▼ 答え（ネタバレ注意）", "", "", ""]
