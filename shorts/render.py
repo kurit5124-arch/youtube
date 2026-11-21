@@ -44,6 +44,31 @@ def find_font(custom: str | None = None) -> str:
     raise RuntimeError("日本語フォントが見つかりません。fonts-noto-cjk を入れるか assets/fonts に置いてください")
 
 
+EMOJI_FONTS = [  # (パス, そのフォントで使えるサイズ)
+    ("assets/fonts/NotoColorEmoji.ttf", 109),
+    ("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", 109),
+    ("/usr/share/fonts/noto/NotoColorEmoji.ttf", 109),
+    ("/System/Library/Fonts/Apple Color Emoji.ttc", 160),
+]
+
+
+def emoji_image(text: str, height: int) -> Image.Image | None:
+    """絵文字を「イメージ画像」として描いて返す（カラー絵文字フォントが無ければ None）。"""
+    for path, size in EMOJI_FONTS:
+        if Path(path).exists():
+            break
+    else:
+        return None
+    font = ImageFont.truetype(path, size)
+    canvas = Image.new("RGBA", (size * (len(text) + 2), size * 2), (0, 0, 0, 0))
+    ImageDraw.Draw(canvas).text((size // 2, size // 2), text, font=font, embedded_color=True)
+    box = canvas.getbbox()
+    if not box:
+        return None
+    im = canvas.crop(box)
+    return im.resize((max(1, round(im.width * height / im.height)), height), Image.LANCZOS)
+
+
 # 行頭に来てはいけない文字
 NO_START = set("、。，．・：；？！ー」』）】〕〉》ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ…")
 
@@ -160,9 +185,16 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
                 d.rounded_rectangle(box, radius=56, fill=(243, 244, 246), outline=accent, width=6)
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(25, 25, 35), anchor="lm")
     else:
-        font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, cy1 - cy0 - 180,
-                                   start=118 if big else 84)
-        y = (cy0 + cy1) / 2 - (len(lines) - 1) * lh / 2 + 10
+        pic = emoji_image(scene.emoji, 190) if scene.emoji else None
+        top_y = cy0
+        if pic:
+            if pic.width > cx1 - cx0 - 120:
+                pic = pic.resize((cx1 - cx0 - 120, round(pic.height * (cx1 - cx0 - 120) / pic.width)), Image.LANCZOS)
+            img.alpha_composite(pic, (int(W / 2 - pic.width / 2), cy0 + 90))
+            top_y = cy0 + 90 + pic.height
+        font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, cy1 - top_y - (90 if pic else 180),
+                                   start=(100 if pic else 118) if big else (76 if pic else 84))
+        y = (top_y + cy1) / 2 - (len(lines) - 1) * lh / 2 + 10
         for line in lines:
             d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
             y += lh

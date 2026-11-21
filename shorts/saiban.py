@@ -161,6 +161,13 @@ CASE_SYSTEM = """あなたは YouTube ショート「みんなの裁判」の脚
 def generate_case(cfg: dict, past: list[dict]) -> dict:
     props = {k: {"type": "string", "description": v} for k, v in CASE_FIELDS.items()}
     props["tags"] = {"type": "array", "items": {"type": "string"}, "description": "YouTube のタグ 3〜6個"}
+    props["emoji"] = {
+        "type": "object", "description": "場面ごとのイメージ画像にする絵文字。それぞれ1〜3個。肌の色の指定や ZWJ でつなぐ絵文字は使わない",
+        "additionalProperties": False, "required": ["hook", "summary", "plaintiff", "defendant"],
+        "properties": {"hook": {"type": "string", "description": "事件全体（例: 😴🔊🥩）"},
+                       "summary": {"type": "string", "description": "事件の概要"},
+                       "plaintiff": {"type": "string", "description": "原告（例: 👩💢）"},
+                       "defendant": {"type": "string", "description": "被告（例: 🧔💤）"}}}
     props["hints"] = {
         "type": "array", "description": "note の記事に載せる「考えるヒント」を3つ。どちらか一方に肩入れせず、判断が分かれる視点を示す",
         "items": {"type": "object", "additionalProperties": False, "required": ["title", "text"],
@@ -248,28 +255,34 @@ def verdict_scenes(prev: dict, v: Verdict) -> list[Scene]:
         if v.b_voice:
             lines.append(f"B派「{v.b_voice}」")
             said.append(f"{v.b_voice}、という声")
-        scenes.append(Scene(kind="verdict", label="みんなの声", text="\n\n".join(lines),
+        scenes.append(Scene(kind="verdict", label="みんなの声", text="\n\n".join(lines), emoji="💬",
                             narration="コメントでは、" + "や、".join(said) + "がありました。"))
     return scenes
 
+
+# 場面ごとのイメージ画像（絵文字）。事件側で指定が無いときに使う
+DEFAULT_EMOJI = {"hook": "⚖️", "summary": "🔍", "plaintiff": "🙋", "defendant": "🙅"}
 
 DEFAULT_OUTRO = "あなたの判決は？コメントにAかBで投票してね。結果は次回発表します！"
 
 
 def case_scenes(case: dict, no: int, outro: str = DEFAULT_OUTRO) -> list[Scene]:
     choices = [f"A {case['option_a']}", f"B {case['option_b']}"]
+    em = {**DEFAULT_EMOJI, **{k: v for k, v in (case.get("emoji") or {}).items() if v}}
     return [
-        Scene(kind="hook", label=f"事件ファイル No.{no}", text=case["title"], narration=_s(case["hook"])),
-        Scene(kind="case", label="事件の概要", text=case["summary"], narration=_s(case["summary_narration"])),
+        Scene(kind="hook", label=f"事件ファイル No.{no}", text=case["title"], narration=_s(case["hook"]),
+              emoji=em["hook"]),
+        Scene(kind="case", label="事件の概要", text=case["summary"], narration=_s(case["summary_narration"]),
+              emoji=em["summary"]),
         Scene(kind="case", label="原告の言い分", text=f"「{case['plaintiff_claim']}」",
-              narration=_s("原告は、" + case["plaintiff_narration"])),
+              narration=_s("原告は、" + case["plaintiff_narration"]), emoji=em["plaintiff"]),
         Scene(kind="case", label="被告の言い分", text=f"「{case['defendant_claim']}」",
-              narration=_s("一方、被告は、" + case["defendant_narration"])),
+              narration=_s("一方、被告は、" + case["defendant_narration"]), emoji=em["defendant"]),
         Scene(kind="case", label="争点", text=case["question"], choices=choices,
               narration=f"争点は、{_s(case['question'])}"
                         f"Aなら{case['option_a']}、Bなら{case['option_b']}。"),
         Scene(kind="outro", label="あなたの判決は？", text="コメントに\nA か B で\n投票してね！",
-              narration=outro),
+              narration=outro, emoji="⚖️💬"),
     ]
 
 

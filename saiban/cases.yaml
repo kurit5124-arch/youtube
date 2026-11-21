@@ -5,6 +5,7 @@
 # 文字数の目安（1分以内に収めるため）
 #   hook 40 / summary 40 / summary_narration 90 / *_claim 35 / *_narration 70
 #   question 30 / option_a・option_b 9 文字以内
+#   emoji: 場面ごとのイメージ画像（絵文字 1〜3 個。hook / summary / plaintiff / defendant）
 #   hints: note の記事に載せる「考えるヒント」（3つ。動画には出ません）
 # すべてフィクションです。実在の人物・団体・事件は書かないでください。
 
@@ -21,6 +22,11 @@
   option_a: 返すべき
   option_b: 返さなくていい
   tags: [AI, 小説, 文学賞]
+  emoji:
+    hook: 🤖📖🏆
+    summary: 📝💰
+    plaintiff: 🏢😠
+    defendant: 🤖🔧
   hints:
     - title: 「書いた」とはどこまでを言う？
       text: 構成やアイデアを人が考え、文章をAIが書いた場合、作者は誰なのか。ワープロや辞書と、文章そのものを作るAIは同じ「道具」と言えるでしょうか。
@@ -42,6 +48,11 @@
   option_a: 夫が払うべき
   option_b: 家計で払う
   tags: [AIスピーカー, 寝言, 夫婦, 和牛, 家族]
+  emoji:
+    hook: 😴🔊🥩
+    summary: 🔊🛒📦
+    plaintiff: 👩💢
+    defendant: 🧔💤
   hints:
     - title: 寝言は「本人の発言」？
       text: 声を出したのは確かに夫。でも本人に注文するつもりはありませんでした。意思のない発言にまで責任を持つべきかどうかが、最初の分かれ目です。
@@ -63,6 +74,11 @@
   option_a: 払うべき
   option_b: 払わなくていい
   tags: [推し活, ライブ, 友達]
+  emoji:
+    hook: 🎤🎫
+    summary: 🎫💔
+    plaintiff: 🙋💴
+    defendant: 💼🙏
   hints:
     - title: 頼まれた時点で約束は成立？
       text: 「取って」と頼み、相手が取った時点で、代金を払う約束ができていたと考えるか。行けなくなったら取り消せる程度の頼みだったと考えるか。
@@ -84,6 +100,11 @@
   option_a: 払うべき
   option_b: 払わなくていい
   tags: [リモートワーク, 在宅勤務, 電気代, 仕事]
+  emoji:
+    hook: 🏠💻⚡
+    summary: ⚡💸
+    plaintiff: 😩💡
+    defendant: 🏢🚃
   hints:
     - title: 誰の都合で増えた出費？
       text: 在宅勤務は会社が決めたこと。会社の都合で増えた出費なら会社が持つべき、という考え方があります。
@@ -105,6 +126,11 @@
   option_a: 返金すべき
   option_b: 返金不要
   tags: [フリマアプリ, メルカリ, 返金]
+  emoji:
+    hook: 📷📦
+    summary: 📷🔍
+    plaintiff: 😡💴
+    defendant: 🤷📦
   hints:
     - title: 「ほぼ新品」の基準は人それぞれ
       text: 売る側の「ほぼ」と買う側の「ほぼ」は同じとは限りません。あいまいな言葉の責任は、書いた側と読んだ側のどちらにあるでしょうか。
@@ -126,6 +152,11 @@
   option_a: 返すべき
   option_b: 手間賃でいい
   tags: [割り勘, 飲み会, 幹事]
+  emoji:
+    hook: 🍻🧮
+    summary: 🪙🪙🪙
+    plaintiff: 🙋🪙
+    defendant: 📱📝
   hints:
     - title: 少額なら許される？
       text: 1回あたりは数十円。でも積み重なれば6千円です。金額の大きさで判断が変わるのかどうかがポイントです。
@@ -147,6 +178,11 @@
   option_a: 悪い
   option_b: 悪くない
   tags: [近所トラブル, 柿, 庭]
+  emoji:
+    hook: 🌳🍂
+    summary: 🌳🧱🏡
+    plaintiff: 👴🌳
+    defendant: 🧹🍂
   hints:
     - title: 木の持ち主と土地の持ち主
       text: 実がなっている枝は自分の庭の上。それでも実は木の持ち主のものか。身近なのに意外と答えに迷うテーマです。
@@ -168,6 +204,11 @@
   option_a: 払うべき
   option_b: 払わなくていい
   tags: [結婚式, ご祝儀, マナー]
+  emoji:
+    hook: 💒💰
+    summary: 💌💴
+    plaintiff: 😤💴
+    defendant: 🙏💐
   hints:
     - title: ご祝儀はお祝い？それとも貸し借り？
       text: もらった額を返すのがマナーとされる一方、ご祝儀は本来お祝いの気持ち。どちらの性格が強いと考えるかで答えが変わります。
@@ -189,6 +230,11 @@
   option_a: 謝るべき
   option_b: 謝らなくていい
   tags: [SNS, 写真, 拡散, プライバシー]
+  emoji:
+    hook: 📸📱
+    summary: 📱🔥
+    plaintiff: 😱🙈
+    defendant: 🤳😊
   hints:
     - title: 写真を撮ることと載せることは別
       text: 一緒に写真を撮ることには同意していても、ネットに載せることまで同意したとは限りません。
@@ -210,6 +256,11 @@
   option_a: 全額返すべき
   option_b: 全額は不要
   tags: [サブスク, 家族, クレジットカード]
+  emoji:
+    hook: 📺💳
+    summary: 💳📅
+    plaintiff: 👩😠
+    defendant: 🎓🙄
   hints:
     - title: 登録した人の責任
       text: 自分で登録したサービスは、自分で管理するのが基本。1回しか見ていないのは本人の事情です。
@@ -231,6 +282,11 @@
   option_a: 戻すべき
   option_b: 減らしていい
   tags: [副業, 会社員, ボーナス]
+  emoji:
+    hook: 🌙💻
+    summary: 💻🏢
+    plaintiff: 😤💼
+    defendant: 🏢📋
   hints:
     - title: 中身の問題か、手続きの問題か
       text: 副業そのものは禁止されていません。問題は届け出をしなかったこと。手続きのミスにどこまで重い処分がふさわしいでしょうか。
