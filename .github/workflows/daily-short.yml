@@ -2,13 +2,18 @@ name: 毎日ショート動画を作って投稿
 
 on:
   schedule:
-    # 毎日 6:40 (日本時間) = 前日 21:40 (UTC) に作り始め、朝7時ごろに投稿される
-    - cron: "40 21 * * *"
+    # 時刻は UTC。実行開始から投稿まで数分〜20分ほどかかる
+    - cron: "40 21 * * *"   # 朝  6:40 (日本時間) → 7時ごろ「今日は何の日クイズ」
+    - cron: "40 9 * * *"    # 夜 18:40 (日本時間) → 19時ごろ 雑学1本目
+    - cron: "40 11 * * *"   # 夜 20:40 (日本時間) → 21時ごろ 雑学2本目
   workflow_dispatch:
     inputs:
       source:
-        description: "ネタ (auto / today / topics)"
-        default: auto
+        description: "ネタ (today = 今日は何の日クイズ / topics = 雑学 / auto)"
+        default: today
+      slot:
+        description: "雑学の何本目か（0 か 1）"
+        default: "0"
       date:
         description: "日付 YYYY-MM-DD（空なら今日）"
         default: ""
@@ -41,7 +46,7 @@ jobs:
       - name: ffmpeg と日本語フォントを入れる
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-noto-cjk fonts-noto-cjk-extra
+          sudo apt-get install -y -qq ffmpeg fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-color-emoji
 
       - name: Python ライブラリを入れる
         run: pip install -r requirements.txt
@@ -51,10 +56,19 @@ jobs:
           IN_SOURCE: ${{ inputs.source }}
           IN_DATE: ${{ inputs.date }}
           IN_UPLOAD: ${{ inputs.upload }}
+          IN_SLOT: ${{ inputs.slot }}
           EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
           ARGS=()
+          # 定期実行はスケジュールごとに中身を決める
+          case "$SCHEDULE" in
+            "40 21 * * *") ARGS+=(--source today) ;;
+            "40 9 * * *")  ARGS+=(--source topics --slot 0) ;;
+            "40 11 * * *") ARGS+=(--source topics --slot 1) ;;
+          esac
           [ -n "$IN_SOURCE" ] && ARGS+=(--source "$IN_SOURCE")
+          [ -n "$IN_SLOT" ] && ARGS+=(--slot "$IN_SLOT")
           [ -n "$IN_DATE" ] && ARGS+=(--date "$IN_DATE")
           # 定期実行 or 手動で upload=true、かつ Secrets があるときだけ投稿
           if [ "$EVENT" = "schedule" ] || [ "$IN_UPLOAD" = "true" ]; then

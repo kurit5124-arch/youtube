@@ -83,16 +83,27 @@ def parse_events(section_text: str) -> list[tuple[int, str]]:
     return events
 
 
-def parse_observances(section_text: str) -> list[tuple[str, str]]:
-    """記念日セクションを (名前, 説明) にする。説明は直後の「*:」行。"""
-    items: list[tuple[str, str]] = []
+def parse_observances(section_text: str) -> list[tuple[str, str, bool]]:
+    """記念日セクションを (名前, 説明, 日本の記念日か) にする。説明は直後の「*:」行。"""
+    items: list[tuple[str, str, bool]] = []
     for raw in section_text.splitlines():
         if raw.startswith("*:") or raw.startswith("**:"):
             if items and not items[-1][1]:
-                items[-1] = (items[-1][0], clean(raw.lstrip("*: ").strip()))
+                name, _, jp = items[-1]
+                items[-1] = (name, clean(raw.lstrip("*: ").strip()), jp)
         elif raw.startswith("*") and not raw.startswith("**"):
+            jp = "{{JPN}}" in raw or "{{JPN" in raw or "（日本）" in raw or "(日本)" in raw
             name = clean(raw.lstrip("* ").strip())
             name = re.sub(r"[（(][^）)]*[）)]\s*$", "", name).strip()  # 末尾の(国名)
             if name:
-                items.append((name, ""))
+                items.append((name, "", jp))
     return items
+
+
+def best_observance(items: list[tuple[str, str, bool]]) -> tuple[str, str] | None:
+    """紹介する記念日を1つ選ぶ。日本の記念日で説明あり → 説明あり → 日本 → 先頭。"""
+    for cond in (lambda x: x[2] and x[1], lambda x: x[1], lambda x: x[2], lambda x: True):
+        for it in items:
+            if cond(it):
+                return it[0], it[1]
+    return None
