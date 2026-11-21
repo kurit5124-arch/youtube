@@ -11,11 +11,11 @@ timezone: Asia/Tokyo
 #   女性: ja-JP-NanamiNeural  男性: ja-JP-KeitaNeural
 voice:
   name: ja-JP-NanamiNeural
-  rate: "+15%"     # 話す速さ
+  rate: "+25%"     # 話す速さ
   pitch: "+0Hz"
 
 max_seconds: 58      # ショートに収めるための最大秒数（超えたら項目を減らす）
-scene_gap: 0.35      # シーン間の間（秒）
+scene_gap: 0.2       # シーン間の間（秒）
 bgm_dir: assets/bgm  # ここに mp3 を置くと BGM として使う（著作権フリーのものを）
 bgm_volume: 0.15
 # font: assets/fonts/YourFont.ttf   # 好きなフォントを使う場合

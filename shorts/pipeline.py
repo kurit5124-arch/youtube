@@ -24,9 +24,12 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
         elif s.reveal:
             dur = tts.synthesize(s.narration, a, cfg, allow_silent)
             tts.prepend_chime(a)
-            audios.append((a, dur + 0.6 + gap + 0.5))  # 正解を見せる時間を少し長めに
+            audios.append((a, dur + 0.6 + gap + 0.3))  # 正解を見せる時間を少し長めに
         else:
             audios.append((a, tts.synthesize(s.narration, a, cfg, allow_silent) + gap))
+    print(f"[time] 合計 {sum(d for _, d in audios):.1f}秒 / 上限 {max_len}秒")
+    for s_, (_, d) in zip(plan.scenes, audios):
+        print(f"[time]   {d:5.1f}秒  [{s_.label}] {s_.narration[:30]}")
     while sum(d for _, d in audios) > max_len:
         items = [i for i, s in enumerate(plan.scenes) if s.kind == "item"]
         groups = sorted({plan.scenes[i].group for i in items})
