@@ -89,6 +89,9 @@ def _shadow_text(draw, xy, text, font, fill, anchor="mm", shadow=(0, 0, 0, 160),
 
 
 def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: str, out: Path) -> None:
+    if plan.style == "documentary":
+        from . import docstyle
+        return docstyle.draw(plan, scene, idx, total, font_path, out)
     rng = random.Random(plan.seed)
     top, bottom, accent = PALETTES[rng.randrange(len(PALETTES))]
     img = _gradient(top, bottom).convert("RGBA")

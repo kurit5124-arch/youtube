@@ -46,7 +46,7 @@ def upload(video: Path, plan: VideoPlan, cfg: dict) -> str:
             "title": plan.title[:100],
             "description": plan.description[:4900],
             "tags": plan.tags[:30],
-            "categoryId": str(uc.get("category_id", 27)),  # 27 = Education
+            "categoryId": str(plan.category_id or uc.get("category_id", 27)),  # 27 = Education
             "defaultLanguage": "ja",
             "defaultAudioLanguage": "ja",
         },

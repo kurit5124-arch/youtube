@@ -50,7 +50,8 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
     total = sum(d for _, d in audios)
     bgm_dir = Path(cfg.get("bgm_dir", "assets/bgm"))
     bgms = sorted(p for p in bgm_dir.glob("*") if p.suffix.lower() in (".mp3", ".m4a", ".wav", ".ogg")) if bgm_dir.exists() else []
-    bgm = bgms[plan.seed % len(bgms)] if bgms else None
+    bgm = next((p for p in bgms if p.name == plan.bgm), None) if plan.bgm else None
+    bgm = bgm or (bgms[plan.seed % len(bgms)] if bgms else None)
     out.parent.mkdir(parents=True, exist_ok=True)
     render.finalize(segs, total, out, bgm, float(cfg.get("bgm_volume", 0.12)), render.accent_of(plan))
 
