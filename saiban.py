@@ -29,6 +29,8 @@ def main() -> int:
     ap.add_argument("--upload", action="store_true", help="YouTube に投稿して履歴を更新する")
     ap.add_argument("--stock", action="store_true", help="手持ちの事件（saiban/cases.yaml）を使う")
     ap.add_argument("--no-verdict", action="store_true", help="前回の判決発表を入れない")
+    ap.add_argument("--case", help="手持ちの事件をタイトルで指定する（動作確認・作り直し用）")
+    ap.add_argument("--number", type=int, help="事件番号を指定する（既定: 履歴の続き）")
     ap.add_argument("--allow-silent", action="store_true", help="音声合成できないとき無音で続行（動作確認用）")
     ap.add_argument("--out", default="output", help="出力フォルダ")
     args = ap.parse_args()
@@ -67,7 +69,14 @@ def main() -> int:
 
     # 2) 新しい事件
     case = None
-    if not args.stock and sb.claude_available():
+    if args.case:
+        cases = yaml.safe_load((ROOT / sc.get("cases", "saiban/cases.yaml")).read_text(encoding="utf-8")) or []
+        case = next((c for c in cases if c["title"] == args.case), None)
+        if case is None:
+            print(f"[error] 「{args.case}」という事件が見つかりません", file=sys.stderr)
+            return 2
+        case["source"] = "stock"
+    elif not args.stock and sb.claude_available():
         try:
             case = sb.generate_case(cfg, [h["case"] for h in history])
             case["source"] = "claude"
@@ -76,7 +85,7 @@ def main() -> int:
     if case is None:
         case = sb.stock_case(ROOT / sc.get("cases", "saiban/cases.yaml"), history)
         case["source"] = "stock"
-    no = (history[-1]["no"] + 1) if history else 1
+    no = args.number or ((history[-1]["no"] + 1) if history else 1)
 
     plan = sb.build_plan(case, no, now.date(), prev if show_verdict else None, verdict if show_verdict else None)
     print(f"[plan] {plan.title}")
