@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 import yaml
 
-from . import wikitext
+from . import illust, wikitext
 from .models import Scene, VideoPlan
 
 WIKI_API = "https://ja.wikipedia.org/w/api.php"
@@ -121,13 +121,15 @@ def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> Vid
 
     md = f"{date.month}月{date.day}日"
     if quiz:
-        return _quiz_today(date, md, picked, obs if tc.get("include_observance", True) else [], cfg, rng)
+        best = wikitext.best_observance(obs) if tc.get("include_observance", True) else None
+        return _quiz_today(date, md, picked, best, cfg, rng)
     scenes = [Scene(kind="hook", label="TODAY", text=f"{md}は\n何の日？",
                     narration=f"今日、{md}は何の日？思わず話したくなる出来事を紹介します。")]
 
     obs_used = None
-    if obs and tc.get("include_observance", True):
-        name, desc = obs[0]
+    best = wikitext.best_observance(obs) if tc.get("include_observance", True) else None
+    if best:
+        name, desc = best
         obs_used = name
         desc = _shorten(desc, 45) if desc else ""
         scenes.append(Scene(kind="item", label="記念日", text=f"「{name}」",
@@ -180,90 +182,125 @@ def _year_choices(y: int, rng: random.Random, this_year: int) -> tuple[list[int]
 LETTERS = "ABC"
 
 
+def _first_sentences(text: str, limit: int) -> str:
+    """説明文を、limit 文字以内に収まるところまで文単位で切る。"""
+    out = ""
+    for sent in [x for x in re.split(r"(?<=。)", text) if x.strip()]:
+        if len(out) + len(sent) > limit:
+            break
+        out += sent
+    return out or _shorten(text, limit)
+
+
 def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
-    hook_narr = f"今日、{md}は"
+    """obs = (記念日の名前, 説明) または None"""
+    obs_name, obs_desc = obs if obs else ("", "")
+    obs_emoji = illust.pick_one(obs_name + obs_desc, fallback="📅") if obs else "📅"
+
+    scenes = [Scene(kind="hook", label="3択クイズ", text=f"{md}は\n何の日？", emoji=obs_emoji,
+                    narration=f"今日、{md}は何の日？3択クイズに挑戦！")]
+
+    # 今日は何の日かの説明
     if obs:
-        hook_narr += f"{obs[0][0]}。今日の出来事、何年かわかる？"
-    else:
-        hook_narr += "何の日？今日の出来事、何年かわかる？"
-    scenes = [Scene(kind="hook", label="3択クイズ", text="何年の\n出来事か\nわかる？", narration=hook_narr)]
+        desc = _first_sentences(obs_desc, cfg.get("today", {}).get("observance_max_chars", 70)) if obs_desc else ""
+        scenes.append(Scene(kind="item", label="今日は何の日", text=f"「{obs_name}」", subtext=desc, emoji=obs_emoji,
+                            narration=_sentence(f"今日は、{obs_name}") + (_sentence(desc) if desc else "")))
 
     answers = []
     for n, (y, t) in enumerate(picked, 1):
         years, ans = _year_choices(y, rng, date.year)
         choices = [f"{LETTERS[i]}  {_year_str(v)}" for i, v in enumerate(years)]
         t = t.rstrip("。")
-        q = Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices,
+        em = illust.pick_one(t, fallback="❓")
+        q = Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices, emoji=em,
                   narration=_sentence(f"第{n}問。{t}") + "何年？")
         scenes.append(q)
         for c in (3, 2, 1):
-            scenes.append(Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices,
+            scenes.append(Scene(kind="item", group=n, label=f"第{n}問", text=t, choices=choices, emoji=em,
                                 countdown=c, narration=""))
-        scenes.append(Scene(kind="item", group=n, label="正解！", text=t, choices=choices, answer=ans,
+        scenes.append(Scene(kind="item", group=n, label="正解！", text=t, choices=choices, answer=ans, emoji=em,
                             reveal=True, narration=f"正解は、{LETTERS[ans]}、{_year_str(y)}でした！"))
         answers.append((y, t))
 
-    scenes.append(Scene(kind="outro", label="SEE YOU", text="何問わかった？\nコメントで\n教えてね！",
-                        narration=cfg.get("quiz_outro_narration",
-                                          "何問わかった？コメントで教えてね！")))
+    scenes.append(Scene(kind="outro", label="SEE YOU", text="何問わかった？\nコメントで\n教えてね！", emoji="🙌",
+                        narration=cfg.get("quiz_outro_narration", "何問わかった？コメントで教えてね！")))
 
-    lines = [f"{md}に起きた出来事、何年かわかる？3択クイズに挑戦！", "何問わかったかコメントで教えてね。", "",
-             "▼ 答え（ネタバレ注意）", "", "", ""]
+    lines = [f"{md}は何の日？出来事が何年か当てる3択クイズに挑戦！", "何問わかったかコメントで教えてね。", ""]
     if obs:
-        lines.append(f"■ 今日は「{obs[0][0]}」")
+        lines += [f"■ 今日は「{obs_name}」", obs_desc, ""] if obs_desc else [f"■ 今日は「{obs_name}」", ""]
+    lines += ["▼ クイズの答え（ネタバレ注意）", "", "", ""]
     lines += [f"■ {_year_str(y)}：{t}" for y, t in answers]
     lines += ["", f"出典：Wikipedia「{md}」 https://ja.wikipedia.org/wiki/{md}",
-              "（CC BY-SA 4.0 で提供されている文章をもとに作成しています）", "",
+              "（CC BY-SA 4.0 で提供されている文章をもとに作成しています）",
+              "イラスト：Noto Emoji（Google / SIL Open Font License）", "",
               "#クイズ #今日は何の日 #雑学 #歴史 #shorts"]
-    return VideoPlan(
+    emojis = [obs_emoji] + [s.emoji for s in scenes if s.choices and s.emoji not in ("❓",)]
+    plan = VideoPlan(
         header="今日は何の日クイズ", subheader=md, scenes=scenes,
-        title=f"【3択クイズ】{md}の出来事、何年かわかる？ #shorts",
+        title=(f"【今日は何の日】{md}は{obs_name}！3択クイズ #shorts" if obs
+               else f"【3択クイズ】{md}の出来事、何年かわかる？ #shorts"),
         description="\n".join(lines),
-        tags=["クイズ", "3択クイズ", "今日は何の日", md, "雑学", "歴史", "shorts"],
+        tags=["クイズ", "3択クイズ", "今日は何の日", md, obs_name, "雑学", "歴史", "shorts"],
         seed=date.toordinal(),
+        emojis=list(dict.fromkeys(emojis)),
+        max_seconds=float(cfg.get("today", {}).get("quiz_max_seconds", 90)),
     )
+    return plan
+
 
 
 # ---------------------------------------------------------------- topics
-def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = None) -> VideoPlan:
+def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = None, slot: int = 0) -> VideoPlan:
+    """雑学ネタ帳から1本作る。1日に複数本出すときは slot（0,1,…）で別のネタになる。"""
     topics = yaml.safe_load(topics_path.read_text(encoding="utf-8")) or []
     if not topics:
         raise RuntimeError(f"{topics_path} にネタがありません")
-    i = index if index is not None else date.toordinal() % len(topics)
-    t = topics[i % len(topics)]
+    per_day = int(cfg.get("topics_per_day", 2))
+    i = index if index is not None else date.toordinal() * per_day + slot
+    i %= len(topics)
+    t = topics[i]
 
     title = t["title"]
+    main_em = t.get("emoji") or illust.pick_one(title, fallback="💡")
     hook = t.get("hook", f"{title}、知ってた？")
-    scenes = [Scene(kind="hook", label="雑学", text=t.get("hook_text", title), narration=_sentence(hook))]
+    scenes = [Scene(kind="hook", label="雑学", text=t.get("hook_text", title), emoji=main_em,
+                    narration=_sentence(hook))]
+    point_ems = []
     for n, p in enumerate(t["points"], 1):
         if isinstance(p, dict):
             text, narr = p["text"], p.get("narration", p["text"])
+            em = p.get("emoji") or illust.pick_one(text, fallback=main_em)
         else:
             text = narr = str(p)
-        scenes.append(Scene(kind="item", label=f"その{n}", text=text, narration=_sentence(narr)))
+            em = illust.pick_one(text, fallback=main_em)
+        point_ems.append(em)
+        scenes.append(Scene(kind="item", label=f"その{n}", text=text, emoji=em, narration=_sentence(narr)))
     scenes.append(Scene(kind="outro", label="SEE YOU", text=t.get("outro_text", "チャンネル登録\nしてね！"),
+                        emoji="🙌",
                         narration=t.get("outro", cfg.get("outro_narration", "明日もお楽しみに！チャンネル登録よろしくお願いします。"))))
 
     tags = t.get("tags", ["雑学", "shorts"])
     desc = t.get("description") or "\n".join(
         [f"{title}を紹介します。", ""] + [f"■ {s.text}" for s in scenes if s.kind == "item"] +
-        ["", " ".join("#" + x for x in tags)])
+        ["", "イラスト：Noto Emoji（Google / SIL Open Font License）", "", " ".join("#" + x for x in tags)])
     return VideoPlan(header=t.get("header", "知ってた？"), subheader=title, scenes=scenes,
                      title=t.get("youtube_title", f"【雑学】{title} #shorts"),
-                     description=desc, tags=tags, seed=date.toordinal() + i)
+                     description=desc, tags=tags, seed=date.toordinal() * per_day + slot,
+                     emojis=list(dict.fromkeys([main_em] + point_ems)))
 
 
-def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None) -> VideoPlan:
+def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None,
+              slot: int = 0) -> VideoPlan:
     if source == "today":
         return plan_today(date, cfg)
     if source == "topics":
-        return plan_topic(date, cfg, root / "topics.yaml", topic_index)
+        return plan_topic(date, cfg, root / "topics.yaml", topic_index, slot)
     if source == "auto":
         try:
             return plan_today(date, cfg)
         except Exception as e:  # noqa: BLE001 - 失敗したら手持ちネタで代用
             print(f"[warn] today の作成に失敗したので topics を使います: {e}")
-            return plan_topic(date, cfg, root / "topics.yaml", topic_index)
+            return plan_topic(date, cfg, root / "topics.yaml", topic_index, slot)
     raise ValueError(f"unknown source: {source}")
 
 

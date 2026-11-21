@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+from . import illust
 from .models import Scene, VideoPlan
 
 W, H = 1080, 1920
@@ -101,6 +102,15 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         x, y = rng.randint(-100, W + 100), rng.randint(-100, H + 100)
         dd.ellipse([x - r, y - r, x + r, y + r], fill=accent + (rng.randint(25, 60),))
     img = Image.alpha_composite(img, deco.filter(ImageFilter.GaussianBlur(60)))
+
+    # 背景のイラスト（テーマに合った絵文字イラストを薄く散らす）
+    bg = [e for e in ([scene.emoji] if scene.emoji else []) + plan.emojis if e]
+    if bg:
+        spots = [(95, 110, 170), (985, 120, 180), (150, 1620, 300), (930, 1560, 260), (540, 1830, 220)]
+        for k, (x, y, size) in enumerate(spots):
+            em = illust.image(bg[k % len(bg)], size, alpha=0.38, angle=rng.uniform(-18, 18))
+            if em:
+                img.alpha_composite(em, (int(x - em.width / 2), int(y - em.height / 2)))
     d = ImageDraw.Draw(img)
 
     # 見出し
@@ -133,6 +143,11 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         for line in lines:
             d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
             y += lh
+        if scene.emoji:
+            em = illust.image(scene.emoji, 150, angle=-10)
+            if em:
+                img.alpha_composite(em, (int(cx1 - em.width + 30), int(cy0 - em.height / 2 - 10)))
+                d = ImageDraw.Draw(img)
         # 選択肢
         cf = ImageFont.truetype(font_path, 66)
         row_h, gap_y = 100, 22
@@ -151,12 +166,35 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
                 d.rounded_rectangle(box, radius=56, fill=(243, 244, 246), outline=accent, width=6)
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(25, 25, 35), anchor="lm")
     else:
-        font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, cy1 - cy0 - 180,
-                                   start=118 if big else 84)
-        y = (cy0 + cy1) / 2 - (len(lines) - 1) * lh / 2 + 10
-        for line in lines:
-            d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
-            y += lh
+        top_y, bottom_y = cy0 + 90, cy1 - 90
+        if scene.emoji:
+            # カードの上半分に大きなイラスト
+            em = illust.image(scene.emoji, 260)
+            if em:
+                img.alpha_composite(em, (int(W / 2 - em.width / 2), int(cy0 + 70)))
+                d = ImageDraw.Draw(img)
+                top_y = cy0 + 70 + em.height + 30
+        if scene.subtext:
+            # 見出し（大きめ）＋説明（小さめ）
+            hf, hl, hlh = fit_text(scene.text, font_path, cx1 - cx0 - 100, 200, start=80, minimum=44)
+            sf, sl, slh = fit_text(scene.subtext, font_path, cx1 - cx0 - 120,
+                                   bottom_y - top_y - len(hl) * hlh - 30, start=50, minimum=30)
+            block = len(hl) * hlh + 30 + len(sl) * slh
+            y = (top_y + bottom_y) / 2 - block / 2 + hlh / 2
+            for line in hl:
+                d.text((W // 2, y), line, font=hf, fill=(25, 25, 35), anchor="mm")
+                y += hlh
+            y += 30 - hlh / 2 + slh / 2
+            for line in sl:
+                d.text((W // 2, y), line, font=sf, fill=(70, 70, 85), anchor="mm")
+                y += slh
+        else:
+            font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, bottom_y - top_y,
+                                       start=118 if big else 84)
+            y = (top_y + bottom_y) / 2 - (len(lines) - 1) * lh / 2
+            for line in lines:
+                d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
+                y += lh
 
     if scene.countdown:
         # カウントダウンの数字（カードの下）

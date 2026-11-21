@@ -17,6 +17,8 @@ class Scene:
     answer: int | None = None    # 正解の番号（reveal のとき強調）
     reveal: bool = False         # 正解発表シーンか
     countdown: int | None = None # カウントダウン表示（3,2,1）
+    emoji: str = ""              # このシーンのイラスト
+    subtext: str = ""            # text の下に小さめに出す説明
 
 
 @dataclass
@@ -30,3 +32,5 @@ class VideoPlan:
     description: str             # YouTube の説明文
     tags: list[str] = field(default_factory=list)
     seed: int = 0                # 配色などのランダム要素を固定するため
+    emojis: list[str] = field(default_factory=list)  # 背景に散らすイラスト
+    max_seconds: float | None = None  # この動画の最大秒数（None なら config の max_seconds）

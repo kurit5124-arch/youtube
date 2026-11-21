@@ -28,6 +28,7 @@ def main() -> int:
     ap.add_argument("--source", choices=["auto", "today", "topics"], help="ネタの取り方（既定: config.yaml）")
     ap.add_argument("--date", help="YYYY-MM-DD（既定: 日本時間の今日）")
     ap.add_argument("--topic-index", type=int, help="topics.yaml の何番目を使うか（0始まり）")
+    ap.add_argument("--slot", type=int, default=0, help="1日に複数本の雑学を出すときの何本目か（0始まり）")
     ap.add_argument("--upload", action="store_true", help="YouTube にアップロードする")
     ap.add_argument("--allow-silent", action="store_true", help="音声合成できないとき無音で続行（動作確認用）")
     ap.add_argument("--out", default="output", help="出力フォルダ")
@@ -43,12 +44,12 @@ def main() -> int:
         plan = sources.plan_today(date, cfg, Path(args.wikitext_file).read_text(encoding="utf-8"))
         source = "today"
     else:
-        plan = sources.make_plan(source, date, cfg, ROOT, args.topic_index)
+        plan = sources.make_plan(source, date, cfg, ROOT, args.topic_index, args.slot)
     print(f"[plan] {plan.title}")
     for s in plan.scenes:
         print(f"   - [{s.label}] {s.narration}")
 
-    name = f"{date.isoformat()}_{source}_{sources.slug(plan)}"
+    name = f"{date.isoformat()}_{source}{args.slot if source == 'topics' else ''}_{sources.slug(plan)}"
     out = Path(args.out) / f"{name}.mp4"
     os.chdir(ROOT)
     pipeline.build_video(plan, cfg, Path(args.out) / "work" / name, out, allow_silent=args.allow_silent)
