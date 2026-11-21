@@ -1,0 +1,145 @@
+# ===== アフィリエイト設定（アフィリエイト用チャンネル） =====
+# 動画の内容に合う「テーマ」を自動で選び、
+#   1) YouTube の説明欄に商品リンク（＋広告表記）を入れる
+#   2) まとめページ（GitHub Pages）にテーマごとの商品一覧を載せる
+# という仕組みです。README の「アフィリエイトで稼ぐ」も見てください。
+
+enabled: true
+
+# --- あなたのID（ここに書くか、GitHub の Variables に登録） ---
+# 環境変数 AMAZON_ASSOCIATE_TAG / RAKUTEN_AFFILIATE_ID があればそちらを優先します。
+# 空のままだと、そのショップのリンクは作られません。
+amazon_tag: ""          # 例: yourname-22
+rakuten_id: ""          # 例: 1a2b3c4d.5e6f7a8b.1a2b3c4d.5e6f7a8b
+
+# --- まとめページのURL ---
+# 空なら GitHub Actions 上では https://<ユーザー名>.github.io/<リポジトリ名>/ を自動で使います。
+# 独自ドメインや別サービス（lit.link など）を使うならここに書く。
+site_url: ""
+site_title: 動画で紹介したアイテムまとめ
+
+# 説明欄に載せる商品の数（多すぎるとスパム扱いされやすいので 2〜3 推奨）
+max_items_in_description: 3
+
+# 動画の最後のナレーションに一言足す（ショートは説明欄のリンクが押せないため）
+#   空にすると何も足しません
+outro_cta: 紹介アイテムはプロフィールのリンクから！
+
+# --- テーマ一覧 ---
+# keywords のどれかが動画のタイトル・タグ・台本に入っていると、そのテーマが選ばれます。
+# どれにも当てはまらないときは default: true のテーマを使います。
+#
+# 商品の書き方:
+#   search: 検索キーワード   → Amazon / 楽天の検索結果へのアフィリエイトリンクを自動で作る（手軽）
+#   url:    リンクURL        → 自分で作った商品リンクをそのまま使う（成約率が高い・おすすめ）
+#   どちらか片方、または両方を書けます。
+themes:
+  - id: zatsugaku
+    name: 雑学・クイズが好きな人へ
+    default: true
+    keywords: [雑学, クイズ, 今日は何の日, 歴史]
+    items:
+      - name: 雑学の本（ランキング上位）
+        comment: 話のネタが一気に増える。スキマ時間にちょうどいい
+        search: 雑学 本
+      - name: 大人向けクイズ本
+        comment: 家族や友達と出し合うと盛り上がる
+        search: クイズ 本 大人
+      - name: 日めくり「今日は何の日」カレンダー
+        comment: 毎朝1つ雑学が増える
+        search: 今日は何の日 日めくり カレンダー
+
+  - id: rekishi
+    name: 歴史をもっと知りたい人へ
+    keywords: [歴史, 幕府, 戦国, 江戸, 明治, 大正, 昭和, 天皇, 戦争, 条約]
+    items:
+      - name: 一冊でわかる日本史の本
+        comment: 大人の学び直しに定番
+        search: 日本史 学び直し 本
+      - name: 歴史まんが全集
+        comment: 子どもと一緒に読める
+        search: 学習まんが 日本の歴史
+      - name: 世界史の図解本
+        comment: 流れがつかみやすい
+        search: 世界史 図解 本
+
+  - id: neko
+    name: 猫好きさんへ
+    keywords: [猫, ネコ, ねこ]
+    items:
+      - name: 猫じゃらし・おもちゃ
+        comment: 運動不足の解消に
+        search: 猫 おもちゃ 人気
+      - name: 爪とぎ
+        comment: 家具を守る必需品
+        search: 猫 爪とぎ 段ボール
+      - name: 猫の雑学・飼い方の本
+        comment: 猫の気持ちがもっとわかる
+        search: 猫 気持ち 本
+
+  - id: suimin
+    name: ぐっすり眠りたい人へ
+    keywords: [睡眠, 眠り, 昼寝, 寝る, 枕]
+    items:
+      - name: 枕（人気ランキング）
+        comment: 合う枕に変えるだけで朝がラクに
+        search: 枕 人気
+      - name: アイマスク
+        comment: 昼寝や移動中にも
+        search: アイマスク 睡眠
+      - name: 睡眠の本
+        comment: 眠りの仕組みがわかる
+        search: 睡眠 本 ベストセラー
+
+  - id: inu
+    name: 犬好きさんへ
+    keywords: [犬, イヌ, いぬ]
+    items:
+      - name: 犬のおもちゃ
+        comment: 留守番中の退屈しのぎに
+        search: 犬 おもちゃ 人気
+      - name: 肉球クリーム
+        comment: 乾燥しやすい季節の肉球ケアに
+        search: 犬 肉球クリーム
+      - name: 犬の気持ちがわかる本
+        comment: しぐさの意味がわかる
+        search: 犬 気持ち 本
+
+  - id: coffee
+    name: コーヒー好きな人へ
+    keywords: [コーヒー, 珈琲, カフェ]
+    items:
+      - name: 手動コーヒーミル
+        comment: 挽きたての香りは別物
+        search: コーヒーミル 手動
+      - name: コーヒードリッパー
+        comment: 家で手軽にハンドドリップ
+        search: コーヒー ドリッパー
+      - name: コーヒー豆（お試しセット）
+        comment: 飲み比べで好みが見つかる
+        search: コーヒー豆 お試し セット
+
+  - id: uchu
+    name: 宇宙・星が好きな人へ
+    keywords: [宇宙, 星, 天文, 惑星, 金星, 月, 太陽, ロケット]
+    items:
+      - name: 初心者向け天体望遠鏡
+        comment: 月のクレーターがはっきり見える
+        search: 天体望遠鏡 初心者
+      - name: 家庭用プラネタリウム
+        comment: 部屋が星空になる。プレゼントにも
+        search: 家庭用 プラネタリウム
+      - name: 宇宙の図鑑
+        comment: 写真がきれいで大人も楽しめる
+        search: 宇宙 図鑑
+
+  - id: nihongo
+    name: ことば・日本語が好きな人へ
+    keywords: [日本語, 語源, ことば, 言葉, 漢字]
+    items:
+      - name: 語源の本
+        comment: 普段のことばの意外なルーツ
+        search: 語源 本 日本語
+      - name: 漢字クイズ・パズル
+        comment: 脳トレにもなる
+        search: 漢字 パズル 本

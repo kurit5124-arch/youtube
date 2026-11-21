@@ -66,6 +66,55 @@ Google の審査（API 監査）を通していないプロジェクトから AP
 
 無料枠は 1 日 10,000 ユニットで、1 回の投稿は約 1,600 ユニット（1日数本まで OK）です。
 
+## 4. 別チャンネルでアフィリエイト（任意）
+
+メインのクイズチャンネルとは**別の YouTube チャンネル**で、雑学ショート＋商品紹介リンクで稼ぐ仕組みです。
+メインチャンネルの動画には広告リンクは入りません。
+
+```
+channels/affiliate/topics.yaml ──▶ 雑学ショート ──▶ 別チャンネルに投稿（毎日 19時ごろ）
+                                       │
+channels/affiliate/affiliate.yaml ─────┴─▶ 動画のテーマに合う商品リンク＋【PR】表記を説明欄に自動挿入
+                                       └─▶ まとめページ（GitHub Pages）に商品一覧を公開
+```
+
+ショート動画は**説明欄やコメントのリンクを押せない**ため、視聴者には
+「プロフィールのリンクから」と案内し（締めのナレーションに自動で入ります）、まとめページへ誘導します。
+
+### 設定の手順
+1. **別チャンネルを作る**: YouTube で新しいチャンネル（ブランドアカウント）を作成
+2. **アフィリエイトに登録**: [Amazonアソシエイト](https://affiliate.amazon.co.jp/) や [楽天アフィリエイト](https://affiliate.rakuten.co.jp/) に登録し、
+   ID（Amazon は `xxxx-22` のトラッキングID、楽天はアフィリエイトID）を確認。
+   申請時のサイト欄には、このチャンネルの URL やまとめページの URL を書きます
+3. **ID を登録**: GitHub の **Settings → Secrets and variables → Actions → Variables** に
+   `AMAZON_ASSOCIATE_TAG` / `RAKUTEN_AFFILIATE_ID` を追加（片方だけでも OK）
+4. **別チャンネル用の投稿トークン**: 自分の PC で
+   ```bash
+   python scripts/get_youtube_token.py client_secret.json YT2
+   ```
+   ブラウザで**新しいチャンネル**を選んで許可 → 表示された `YT2_REFRESH_TOKEN` を **Secrets** に登録
+   （Google Cloud のプロジェクトはメインと同じでよく、`YT2_CLIENT_ID` / `YT2_CLIENT_SECRET` は省略可）
+5. **まとめページを公開**: **Settings → Pages → Source** を **GitHub Actions** にする。
+   `channels/affiliate/` を main に push すると `https://<ユーザー名>.github.io/<リポジトリ名>/` に公開されます
+6. 新しいチャンネルの **プロフィールのリンク** にまとめページの URL を設定
+
+### 試す
+```bash
+python main.py --channel affiliate                  # 日替わりのネタで1本作る
+python main.py --channel affiliate --topic-index 1  # ネタを指定
+python scripts/build_affiliate_site.py              # まとめページを site/ に作る
+```
+
+### 稼ぐためのコツ
+- **ネタと商品をセットで増やす**: `topics.yaml` にネタを足し、`affiliate.yaml` の `themes` に合う商品を足す（`keywords` がタイトル・タグに入ると自動で選ばれます）
+- `search:` は検索結果へのリンクで手軽ですが、**実際に良いと思う商品の個別リンクを `url:` で書く**ほうが売れやすいです
+- 「睡眠」「コーヒー」「ペット」など**買い物につながりやすいテーマ**を多めに
+
+### ⚠️ ルール
+- 2023年10月からステマ規制があるので、説明欄とまとめページには **【PR】表記を自動で入れています。消さないでください**
+- Amazon リンクを使うときは「Amazonのアソシエイトとして…」の文言も自動で入ります（規約で必須）
+- 商品について事実でないこと（効果の断定など）は書かないでください
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -92,5 +141,10 @@ shorts/render.py            スライド描画と動画化（Pillow + ffmpeg）
 shorts/pipeline.py          全体の流れ
 shorts/upload.py            YouTube 投稿
 scripts/get_youtube_token.py  投稿用トークン取得
+shorts/affiliate.py         アフィリエイトリンク挿入・まとめページ作成
+channels/affiliate/         アフィリエイト用チャンネルの設定・ネタ帳・商品リスト
+scripts/build_affiliate_site.py   まとめページを作る
+.github/workflows/affiliate-short.yml  アフィリエイト用チャンネルの毎日投稿
+.github/workflows/affiliate-site.yml   まとめページの公開（GitHub Pages）
 .github/workflows/daily-short.yml  毎日の自動実行
 ```
