@@ -26,6 +26,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      # ずんだもん などの声を作る VOICEVOX ENGINE
+      voicevox:
+        image: voicevox/voicevox_engine:cpu-0.26.2
+        ports:
+          - 50021:50021
     env:
       TZ: Asia/Tokyo
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
@@ -47,6 +53,14 @@ jobs:
 
       - name: Python ライブラリを入れる
         run: pip install -r requirements.txt
+
+      - name: VOICEVOX の起動を待つ
+        run: |
+          for i in $(seq 1 90); do
+            curl -sf http://127.0.0.1:50021/version && echo " VOICEVOX ready" && exit 0
+            sleep 2
+          done
+          echo "::warning::VOICEVOX が起動しなかったので Edge TTS の声で作ります"
 
       - name: 判決を集計して、新しい事件の動画を作る（＋投稿）
         env:

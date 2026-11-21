@@ -87,7 +87,8 @@ def main() -> int:
         case["source"] = "stock"
     no = args.number or ((history[-1]["no"] + 1) if history else 1)
 
-    plan = sb.build_plan(case, no, now.date(), prev if show_verdict else None, verdict if show_verdict else None)
+    plan = sb.build_plan(case, no, now.date(), prev if show_verdict else None, verdict if show_verdict else None,
+                         sc.get("outro_narration", sb.DEFAULT_OUTRO))
     print(f"[plan] {plan.title}")
     for s in plan.scenes:
         print(f"   - [{s.label}] {s.narration}")

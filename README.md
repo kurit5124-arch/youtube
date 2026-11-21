@@ -109,6 +109,17 @@ note には公式の投稿 API が無いので、投稿は手作業です。
 - 事件はすべてフィクションで、説明文に断り書きを自動で入れています
 - 投稿した事件と票数は `saiban/history.json` に記録され、ワークフローが自動でコミットします
 
+## 声（ずんだもん）
+
+読み上げは **VOICEVOX のずんだもん** です（`config.yaml` の `voice`）。GitHub Actions では VOICEVOX ENGINE が自動で起動します。
+
+- 声を変える: `voice.speaker` を `ずんだもん（あまあま）` `ずんだもん（ツンツン）` `四国めたん` `春日部つむぎ` などに
+- 速さ・抑揚: `voice.speed` / `voice.intonation`
+- 元の声に戻す: `voice.engine: edge`
+- 自分の PC で使う: [VOICEVOX](https://voicevox.hiroshiba.jp/) を起動しておけば、そのまま使われます
+- VOICEVOX が起動していないときは、自動で Edge TTS の声で作ります
+- **クレジット表記が必須**です。投稿時に説明文へ「音声：VOICEVOX:ずんだもん」を自動で入れています。消さないでください
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -130,7 +141,7 @@ main.py                     実行の入口
 config.yaml / topics.yaml   設定とネタ帳
 shorts/sources.py           ネタ集め・台本作り
 shorts/wikitext.py          Wikipedia の文章の整形
-shorts/tts.py               音声合成（Edge TTS）
+shorts/tts.py               音声合成（VOICEVOX / Edge TTS）
 shorts/render.py            スライド描画と動画化（Pillow + ffmpeg）
 shorts/pipeline.py          全体の流れ
 shorts/upload.py            YouTube 投稿・コメントの読み書き

@@ -39,12 +39,17 @@ def upload(video: Path, plan: VideoPlan, cfg: dict) -> str:
     from googleapiclient.errors import HttpError
     from googleapiclient.http import MediaFileUpload
 
+    from .tts import credit
+
     yt = _youtube(SCOPES)
     uc = cfg.get("upload", {})
+    desc = plan.description
+    if credit(cfg) and credit(cfg) not in desc:
+        desc += f"\n\n音声：{credit(cfg)}"
     body = {
         "snippet": {
             "title": plan.title[:100],
-            "description": plan.description[:4900],
+            "description": desc[:4900],
             "tags": plan.tags[:30],
             "categoryId": str(plan.category_id or uc.get("category_id", 27)),  # 27 = Education
             "defaultLanguage": "ja",

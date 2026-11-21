@@ -253,7 +253,10 @@ def verdict_scenes(prev: dict, v: Verdict) -> list[Scene]:
     return scenes
 
 
-def case_scenes(case: dict, no: int) -> list[Scene]:
+DEFAULT_OUTRO = "あなたの判決は？コメントにAかBで投票してね。結果は次回発表します！"
+
+
+def case_scenes(case: dict, no: int, outro: str = DEFAULT_OUTRO) -> list[Scene]:
     choices = [f"A {case['option_a']}", f"B {case['option_b']}"]
     return [
         Scene(kind="hook", label=f"事件ファイル No.{no}", text=case["title"], narration=_s(case["hook"])),
@@ -266,12 +269,13 @@ def case_scenes(case: dict, no: int) -> list[Scene]:
               narration=f"争点は、{_s(case['question'])}"
                         f"Aなら{case['option_a']}、Bなら{case['option_b']}。"),
         Scene(kind="outro", label="あなたの判決は？", text="コメントに\nA か B で\n投票してね！",
-              narration="あなたの判決は？コメントにAかBで投票してね。結果は次回発表します！"),
+              narration=outro),
     ]
 
 
-def build_plan(case: dict, no: int, date: dt.date, prev: dict | None, verdict: Verdict | None) -> VideoPlan:
-    scenes = (verdict_scenes(prev, verdict) if prev and verdict else []) + case_scenes(case, no)
+def build_plan(case: dict, no: int, date: dt.date, prev: dict | None, verdict: Verdict | None,
+               outro: str = DEFAULT_OUTRO) -> VideoPlan:
+    scenes = (verdict_scenes(prev, verdict) if prev and verdict else []) + case_scenes(case, no, outro)
     tags = ["みんなの裁判", "裁判", "あなたならどっち", "究極の選択", "shorts"]
     tags += [t for t in case.get("tags", []) if t not in tags]
 
