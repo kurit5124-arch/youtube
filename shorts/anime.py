@@ -167,10 +167,60 @@ class _TextBlock:
             y += self.lh
 
 
+# ---------------------------------------------------------------- 立ち絵
+class Character:
+    """ナレーター（ずんだもん など）の立ち絵。口を閉じた絵と開いた絵があれば口パクする。"""
+
+    def __init__(self, cc: dict):
+        self.height = int(cc.get("height", 600))
+        self.closed = self._load(cc.get("image"))
+        self.open = self._load(cc.get("mouth_open")) or self.closed
+        self.flip = bool(cc.get("flip", False))
+
+    def _load(self, path: str | None) -> Image.Image | None:
+        if not path or not Path(path).exists():
+            return None
+        im = Image.open(path).convert("RGBA")
+        box = im.getbbox()
+        im = im.crop(box) if box else im
+        im = im.resize((max(1, round(im.width * self.height / im.height)), self.height), Image.LANCZOS)
+        return im
+
+    @property
+    def ok(self) -> bool:
+        return self.closed is not None
+
+    def draw(self, img: Image.Image, t: float, env: float, enter: float = 1.0) -> None:
+        im = self.open if env > 0.28 else self.closed
+        if self.flip:
+            im = im.transpose(Image.FLIP_LEFT_RIGHT)
+        # 立ち絵は画面の右下。下の方はショートの文字と重なるので少し下にはみ出させる
+        breathe = math.sin(t * 2.4) * 6
+        x = W - im.width * 0.78 + (1 - _ease_out(enter)) * 500
+        y = H - self.height + 120 - breathe - env * 10
+        img.alpha_composite(im, (int(x), int(y)))
+
+
+_CHAR_CACHE: dict[str, Character] = {}
+
+
+def character(cfg: dict) -> Character | None:
+    cc = cfg.get("character") or {}
+    if not cc.get("enabled", True) or not cc.get("image"):
+        return None
+    key = repr(sorted(cc.items()))
+    if key not in _CHAR_CACHE:
+        _CHAR_CACHE[key] = Character(cc)
+    ch = _CHAR_CACHE[key]
+    return ch if ch.ok else None
+
+
 # ---------------------------------------------------------------- 1 場面ぶんの描画
 class SceneAnimator:
-    def __init__(self, plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: str, dur: float):
+    def __init__(self, plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: str, dur: float,
+                 narrator: Character | None = None):
         self.plan, self.s, self.idx, self.total, self.fp, self.dur = plan, scene, idx, total, font_path, dur
+        self.narrator = narrator
         rng = random.Random(plan.seed)
         self.theme = THEMES[rng.randrange(len(THEMES))]
         strong = scene.kind in ("hook", "verdict") or scene.reveal
@@ -186,7 +236,7 @@ class SceneAnimator:
         elif scene.kind in ("hook", "outro"):
             self.block = None
         else:
-            self.block = _TextBlock(text, font_path, 800, 380, start=76)
+            self.block = _TextBlock(text, font_path, 800, 320 if narrator else 380, start=76)
         self.type_until = max(0.6, (dur - 0.4) * 0.75)  # この秒数で全文が出る
 
     def _header(self, d):
@@ -220,8 +270,11 @@ class SceneAnimator:
         img = bg.copy()
         d = ImageDraw.Draw(img)
         self._header(d)
-        self._label(img, t)
         talk = env * (1 if t < self.dur - 0.2 else 0)
+        if self.narrator:
+            self.narrator.draw(img, t + self.idx * 3.1, talk, enter=t / 0.4 if self.idx == 0 else 1.0)
+            d = ImageDraw.Draw(img)
+        self._label(img, t)
 
         if s.kind == "hook":
             self._hook(img, d, t, talk)
@@ -264,7 +317,7 @@ class SceneAnimator:
     def _talk(self, img, d, t, talk):
         # キャラクター
         cx = {"left": 270, "right": W - 270}.get(self.role, W / 2)
-        cy = 1290 if self.role != "center" else 780
+        cy = (1170 if self.narrator else 1290) if self.role != "center" else 780
         if self.char:
             k = _ease_back(t / 0.35)
             bob = math.sin(t * 5 + self.idx) * 8
@@ -277,7 +330,7 @@ class SceneAnimator:
             box = [80, top, W - 80, top + b.height + 90]
             tail = (W / 2, 930) if self.char else None
         else:
-            top = 640
+            top = 600 if self.narrator else 640
             box = [80, top, W - 80, top + b.height + 90]
             tail = (cx, cy - 140)
         k = _ease_back((t - 0.1) / 0.3)
@@ -355,10 +408,10 @@ class SceneAnimator:
 
 
 def render_segment(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: str,
-                   audio: Path, dur: float, out: Path) -> None:
+                   audio: Path, dur: float, out: Path, cfg: dict | None = None) -> None:
     frames = max(1, int(round(dur * FPS)))
     env = envelope(audio, frames)
-    anim = SceneAnimator(plan, scene, idx, total, font_path, dur)
+    anim = SceneAnimator(plan, scene, idx, total, font_path, dur, character(cfg or {}))
     proc = subprocess.Popen(
         ["ffmpeg", "-y", "-loglevel", "error",
          "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",

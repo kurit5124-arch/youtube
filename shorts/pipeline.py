@@ -48,7 +48,7 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
         seg = workdir / f"seg_{i:02d}.mp4"
         if plan.style == "anime":
             from . import anime
-            anime.render_segment(plan, s, i, len(plan.scenes), font, a, dur, seg)
+            anime.render_segment(plan, s, i, len(plan.scenes), font, a, dur, seg, cfg)
         else:
             img = workdir / f"scene_{i:02d}.png"
             render.draw_scene(plan, s, i, len(plan.scenes), font, img)

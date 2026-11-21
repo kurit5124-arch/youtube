@@ -46,6 +46,9 @@ def upload(video: Path, plan: VideoPlan, cfg: dict) -> str:
     desc = plan.description
     if credit(cfg) and credit(cfg) not in desc:
         desc += f"\n\n音声：{credit(cfg)}"
+    art = (cfg.get("character") or {}).get("credit", "")
+    if art and (cfg.get("character") or {}).get("image") and Path(cfg["character"]["image"]).exists() and art not in desc:
+        desc += f"\n{art}"
     body = {
         "snippet": {
             "title": plan.title[:100],

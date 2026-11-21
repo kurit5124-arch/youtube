@@ -129,6 +129,9 @@ note には公式の投稿 API が無いので、投稿は手作業です。
 - 原告は左、被告は右に立って言い合う
 - 静止画のカード型に戻すときは `saiban.style: card`
 - 59 秒を超えそうなときは「みんなの声」の場面を自動で外します（note の記事には残ります）
+- **立ち絵**: `assets/character/zundamon.png`（口閉じ）と `zundamon_open.png`（口開き）を置くと、
+  画面右下にナレーターとして出て、声に合わせて口パクします（詳しくは `assets/character/README.md`）。
+  配布元の利用規約を確認し、必要なクレジットを `config.yaml` の `character.credit` に書いてください
 
 ## カスタマイズ
 

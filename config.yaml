@@ -58,3 +58,14 @@ saiban:
   outro_narration: あなたの判決は？コメントにAかBで投票するのだ！結果は次回発表するのだ！
   cases: saiban/cases.yaml     # 手持ちの事件
   history: saiban/history.json # 投稿した事件と判決の記録（自動で更新・コミットされる）
+
+# ===== 立ち絵（アニメ風の画面の右下に出るナレーター）=====
+# 画像を置くと自動で使われます。置いていなければ立ち絵なしで作ります。
+# 配布元の利用規約を必ず確認し、求められているクレジットを credit に書いてください（説明文に自動で入ります）。
+character:
+  enabled: true
+  image: assets/character/zundamon.png             # 口を閉じた立ち絵（背景が透明な PNG）
+  mouth_open: assets/character/zundamon_open.png   # 口を開いた立ち絵（あれば口パクします）
+  height: 620       # 画面上の高さ（px）
+  flip: false       # 左右反転
+  credit: ""        # 例: 立ち絵：〇〇様
