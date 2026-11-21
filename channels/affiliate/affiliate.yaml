@@ -10,7 +10,7 @@ enabled: true
 # 環境変数 AMAZON_ASSOCIATE_TAG / RAKUTEN_AFFILIATE_ID があればそちらを優先します。
 # 空のままだと、そのショップのリンクは作られません。
 amazon_tag: ""          # 例: yourname-22
-rakuten_id: ""          # 例: 1a2b3c4d.5e6f7a8b.1a2b3c4d.5e6f7a8b
+rakuten_id: "59cb71ca.54063a36.59cb71cb.fc6d2c32"
 
 # --- まとめページのURL ---
 # 空なら GitHub Actions 上では https://<ユーザー名>.github.io/<リポジトリ名>/ を自動で使います。
@@ -81,6 +81,10 @@ themes:
     name: ぐっすり眠りたい人へ
     keywords: [睡眠, 眠り, 昼寝, 寝る, 枕]
     items:
+      - name: ホテル仕様 プレミアム枕（日本製・高さ調整できる）
+        comment: 高さを変えられて丸洗いもOK
+        shop: 楽天
+        url: https://hb.afl.rakuten.co.jp/ichiba/59cb71ca.54063a36.59cb71cb.fc6d2c32/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fhaoxie%2Fsm-hpd-oc2%2F&link_type=text
       - name: 枕（人気ランキング）
         comment: 合う枕に変えるだけで朝がラクに
         search: 枕 人気
