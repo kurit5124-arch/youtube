@@ -224,7 +224,7 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
     return VideoPlan(header=t.get("header", "知ってた？"), subheader=title, scenes=scenes,
                      title=t.get("youtube_title", f"【雑学】{title} #shorts"),
                      description=desc, tags=tags, seed=date.toordinal() + i,
-                     palette=t.get("palette"), category_id=t.get("category_id"))
+                     palette=t.get("palette"), category_id=t.get("category_id"), bgm=t.get("bgm", ""))
 
 
 def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None) -> VideoPlan:
