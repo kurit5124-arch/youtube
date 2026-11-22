@@ -253,12 +253,21 @@ def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
 def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = None, slot: int = 0) -> VideoPlan:
     """雑学ネタ帳から1本作る。1日に複数本出すときは slot（0,1,…）で別のネタになる。"""
     topics = yaml.safe_load(topics_path.read_text(encoding="utf-8")) or []
+    # months: [12] のような季節ネタは、その月だけ使う
+    if index is None:
+        topics = [t for t in topics if not t.get("months") or date.month in t["months"]]
     if not topics:
         raise RuntimeError(f"{topics_path} にネタがありません")
     per_day = int(cfg.get("topics_per_day", 2))
-    i = index if index is not None else date.toordinal() * per_day + slot
-    i %= len(topics)
-    t = topics[i]
+    # dates: ["12-24"] のように日付を指定したネタは、その日に優先して使う（1本目のみ）
+    md = f"{date.month:02d}-{date.day:02d}"
+    pinned = [t for t in topics if md in [str(x) for x in t.get("dates", [])]] if index is None and slot == 0 else []
+    if pinned:
+        i, t = topics.index(pinned[0]), pinned[0]
+    else:
+        i = index if index is not None else date.toordinal() * per_day + slot
+        i %= len(topics)
+        t = topics[i]
 
     title = t["title"]
     main_em = t.get("emoji") or illust.pick_one(title, fallback="💡")
