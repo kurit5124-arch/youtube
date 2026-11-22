@@ -19,7 +19,10 @@ if __name__ == "__main__":
     cfg = affiliate.load(ROOT / "channels" / channel)
     if not cfg:
         sys.exit(f"channels/{channel}/affiliate.yaml がありません")
-    out = affiliate.build_site(cfg, ROOT / "site")
+    import yaml
+    tp = ROOT / "channels" / channel / "topics.yaml"
+    topics = (yaml.safe_load(tp.read_text(encoding="utf-8")) or []) if tp.exists() else []
+    out = affiliate.build_site(cfg, ROOT / "site", topics)
     print(f"[done] {out}")
     if not (cfg.get("amazon_tag") or cfg.get("rakuten_id")):
         print("[warn] Amazon / 楽天の ID が未設定なので、url: を書いた商品しか載りません")

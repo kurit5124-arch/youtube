@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import html
 import os
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from urllib.parse import quote, quote_plus
 
 import yaml
 
+from . import rakuten_api
 from .models import VideoPlan
 
 DISCLOSURE = "※この説明欄・リンク先にはアフィリエイト広告（PR）が含まれます。"
@@ -62,23 +64,106 @@ def item_links(item: dict, cfg: dict) -> list[Link]:
     return links
 
 
-def choose_theme(plan: VideoPlan, cfg: dict) -> dict | None:
-    """タイトル・タグ・台本にキーワードが一番多く入っているテーマを選ぶ。"""
-    themes = cfg.get("themes") or []
-    if not themes:
+def enrich_theme(theme: dict, cfg: dict) -> dict:
+    """search: の商品を、楽天の商品検索APIで選んだ「人気の具体的な商品」に置き換える。
+
+    API のキーが無いとき・失敗したときは、今までどおり検索結果へのリンクのまま。
+    """
+    if theme.get("_enriched") or not (cfg.get("auto_pick", True) and rakuten_api.available()):
+        return theme
+    used: set[str] = set()
+    items = []
+    for it in theme.get("items") or []:
+        kw = it.get("search")
+        if not kw or it.get("url") or it.get("auto_pick") is False:
+            items.append(it)
+            continue
+        got = rakuten_api.pick(kw, cfg.get("rakuten_id", ""), site_url(cfg), used,
+                               int(cfg.get("min_reviews", 20)), float(cfg.get("min_review_average", 4.0)))
+        if not got:
+            items.append(it)
+            continue
+        used.add(got["code"])
+        note = f"★{got['review_average']:.1f}（レビュー{got['review_count']:,}件）"
+        if got["price"]:
+            note += f"・{got['price']:,}円前後"
+        items.append({"name": got["name"], "shop": "楽天", "url": got["url"],
+                      "comment": f"{it.get('comment', '')}　{note}".strip(), "search": None})
+        print(f"[rakuten] 「{kw}」→ {got['name']}")
+    theme = dict(theme, items=items, _enriched=True)
+    return theme
+
+
+# 商品探しに使わない、ありふれたタグ
+GENERIC_TAGS = {"雑学", "shorts", "short", "クイズ", "3択クイズ", "今日は何の日", "豆知識", "トリビア",
+                "知識", "面白い", "おもしろ", "解説", "歴史", "動物", "健康", "お金", "生活", "飲み物", "食べ物"}
+
+
+def auto_theme(tags: list[str], title: str = "") -> dict | None:
+    """affiliate.yaml に合うテーマが無いとき、動画のタグから商品探しのテーマを自動で作る。"""
+    words = [t.strip("#") for t in tags if t and t.strip("#") not in GENERIC_TAGS and not t.startswith("20")]
+    if not words:
         return None
+    w = words[0]
+    tid = "auto-" + hashlib.md5(w.encode("utf-8")).hexdigest()[:8]
+    return {
+        "id": tid, "name": f"{w}が気になった人へ", "keywords": [w], "auto": True,
+        "items": [
+            {"name": f"{w}の人気アイテム", "comment": "レビューの多い人気商品", "search": f"{w} 人気"},
+            {"name": f"{w}のおすすめグッズ", "comment": "あると便利", "search": f"{w} グッズ"},
+            {"name": f"{w}がわかる本", "comment": "もっと詳しく知りたい人に", "search": f"{w} 本"},
+        ],
+    }
+
+
+def _score(t: dict, text: str, strong: str) -> int:
+    return sum((3 if k in strong else 0) + text.count(k) for k in t.get("keywords", []))
+
+
+def choose_theme(plan: VideoPlan, cfg: dict) -> dict | None:
+    """動画に合うテーマを選ぶ。
+
+    1) affiliate.yaml のテーマ（キーワードが一番多く入っているもの）
+    2) 無ければ、動画のタグから自動でテーマを作る（auto_theme: false で止められる）
+    3) それも無理なら default: true のテーマ
+    """
+    themes = cfg.get("themes") or []
     text = " ".join([plan.title, plan.header, plan.subheader, " ".join(plan.tags)] +
                     [f"{s.text} {s.narration}" for s in plan.scenes])
     # タイトル・タグに入っている語は重みを大きくする
     strong = " ".join([plan.title, plan.subheader, " ".join(plan.tags)])
 
-    def score(t: dict) -> int:
-        return sum((3 if k in strong else 0) + text.count(k) for k in t.get("keywords", []))
-
-    best = max(themes, key=score)
-    if score(best) > 0:
-        return best
+    specific = [t for t in themes if not t.get("default")]
+    if specific:
+        best = max(specific, key=lambda t: _score(t, text, strong))
+        if _score(best, text, strong) > 0:
+            return best
+    if cfg.get("auto_theme", True):
+        t = auto_theme(plan.tags, plan.subheader)
+        if t:
+            return t
+    if not themes:
+        return None
     return next((t for t in themes if t.get("default")), themes[0])
+
+
+def themes_for_site(cfg: dict, topics: list[dict] | None = None) -> list[dict]:
+    """まとめページに載せるテーマ。ネタ帳の中で yaml のテーマに当てはまらないネタの分も自動で足す。"""
+    themes = list(cfg.get("themes") or [])
+    if not cfg.get("auto_theme", True):
+        return themes
+    specific = [t for t in themes if not t.get("default")]
+    seen = {t["id"] for t in themes}
+    for tp in topics or []:
+        tags = [str(x) for x in tp.get("tags", [])]
+        strong = " ".join([str(tp.get("title", "")), " ".join(tags)])
+        if any(_score(t, strong, strong) > 0 for t in specific):
+            continue
+        t = auto_theme(tags, str(tp.get("title", "")))
+        if t and t["id"] not in seen:
+            seen.add(t["id"])
+            themes.append(t)
+    return themes
 
 
 def apply(plan: VideoPlan, cfg: dict) -> dict | None:
@@ -88,6 +173,7 @@ def apply(plan: VideoPlan, cfg: dict) -> dict | None:
     theme = choose_theme(plan, cfg)
     if not theme:
         return None
+    theme = enrich_theme(theme, cfg)
 
     lines: list[str] = []
     for item in (theme.get("items") or [])[: int(cfg.get("max_items_in_description", 3))]:
@@ -142,11 +228,11 @@ footer{font-size:.75rem;color:var(--muted);margin-top:32px}
 """
 
 
-def build_site(cfg: dict, out_dir: Path) -> Path:
+def build_site(cfg: dict, out_dir: Path, topics: list[dict] | None = None) -> Path:
     """affiliate.yaml からテーマごとの商品一覧ページ（index.html）を作る。"""
     e = html.escape
     title = cfg.get("site_title", "紹介アイテムまとめ")
-    themes = cfg.get("themes") or []
+    themes = [enrich_theme(t, cfg) for t in themes_for_site(cfg, topics)]
     nav = "".join(f'<a href="#{e(t["id"])}">{e(t["name"])}</a>' for t in themes)
     secs = []
     for t in themes:
