@@ -293,13 +293,20 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
             em = illust.pick_one(text, fallback=main_em)
         point_ems.append(em)
         scenes.append(Scene(kind="item", label=f"その{n}", text=text, emoji=em, narration=_sentence(narr)))
+    # 商品紹介用：使ったあとの姿（benefit）と、こんな人におすすめ（for_whom）。尺調整で削られない
+    for key, label, default_em in (("benefit", "あると…", "✨"), ("for_whom", "こんな人に", "🙋")):
+        b = t.get(key)
+        if b:
+            scenes.append(Scene(kind="benefit", label=label, text=b["text"], emoji=b.get("emoji", default_em),
+                                narration=_sentence(b.get("narration", b["text"]))))
     scenes.append(Scene(kind="outro", label="SEE YOU", text=t.get("outro_text", "チャンネル登録\nしてね！"),
                         emoji="🙌",
                         narration=t.get("outro", cfg.get("outro_narration", "明日もお楽しみに！チャンネル登録よろしくお願いします。"))))
 
     tags = t.get("tags", ["雑学", "shorts"])
     desc = t.get("description") or "\n".join(
-        [f"{title}を紹介します。", ""] + [f"■ {s.text}" for s in scenes if s.kind == "item"] +
+        [t["hook"] if t.get("benefit") and t.get("hook") else f"{title}を紹介します。", ""] + [f"■ {s.text}" for s in scenes if s.kind == "item"] +
+        ([""] + [f"▼ {s.narration}" for s in scenes if s.kind == "benefit"] if t.get("benefit") else []) +
         ["", "イラスト：Noto Emoji（Google / SIL Open Font License）", "", " ".join("#" + x for x in tags)])
     return VideoPlan(header=t.get("header", "知ってた？"), subheader=title, scenes=scenes,
                      title=t.get("youtube_title", f"【雑学】{title} #shorts"),
