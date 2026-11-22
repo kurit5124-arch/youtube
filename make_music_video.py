@@ -4,7 +4,7 @@
 使い方:
   python make_music_video.py                         # 作曲 → イラスト → 縦型MV（ショート向け）
   python make_music_video.py --seed 3                # 別の曲・別の景色にする
-  python make_music_video.py --landscape             # 横型 1920x1080（通常動画向け）
+  python make_music_video.py --landscape             # 横型 1920x1080・約3分（通常動画向け）
   python make_music_video.py --title "MIDNIGHT RUN"  # タイトル文字を変える
   python make_music_video.py --audio song.mp3        # 手持ちの曲（Suno などで作った曲）を使う
   python make_music_video.py --image art.png         # 手持ちのイラスト（AIで描いた絵など）を動かす
@@ -29,6 +29,8 @@ def main() -> int:
     ap.add_argument("--subtitle", default="SYNTHWAVE  ·  ORIGINAL TRACK")
     ap.add_argument("--seed", type=int, default=7, help="作曲と景色のパターン（数字を変えると別の曲に）")
     ap.add_argument("--bpm", type=float, default=128)
+    ap.add_argument("--length", choices=["short", "long"],
+                    help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
     ap.add_argument("--image", type=Path, help="自分のイラストを動かす。省略するとプログラムで描く")
     ap.add_argument("--landscape", action="store_true", help="横型 1920x1080 にする（既定は縦型 1080x1920）")
@@ -47,9 +49,10 @@ def main() -> int:
         audio = args.audio
         print(f"[1/3] 曲: {audio}")
     else:
-        audio = args.out / f"{slug}.mp3"
-        print(f"[1/3] 作曲中…（{args.bpm:g} BPM, seed={args.seed}）")
-        compose(audio, seed=args.seed, bpm=args.bpm, title=args.title)
+        audio = args.out / f"{slug}{'_landscape' if args.landscape else ''}.mp3"
+        length = args.length or ("long" if args.landscape else "short")
+        print(f"[1/3] 作曲中…（{args.bpm:g} BPM, seed={args.seed}, {length}）")
+        compose(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length)
         print(f"      → {audio}")
 
     print("[2/3] 音を解析中…")

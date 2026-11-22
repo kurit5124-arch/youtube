@@ -1,7 +1,9 @@
 """シンセウェーブ／ダークシンセ風の曲を自動作曲・合成する（numpy だけで完結）。
 
 構成（128 BPM, Aマイナー）:
-  イントロ 4小節 → ビルド 4小節 → ドロップ 8小節 → ブレイク 4小節 → ドロップ2 8小節 → アウトロ 2小節
+  short（約1分）: イントロ → ビルド → ドロップ → ブレイク → ドロップ2 → アウトロ
+  long （約3分）: イントロ → ビルド → ドロップ → ブレイク → ビルド → ドロップ2（別メロ）
+                 → ブリッジ（別のコード・ハーフタイム）→ ビルド → ラストドロップ → アウトロ
 コード進行・メロディ・ドラムパターンは seed から毎回少しずつ変わります。
 """
 from __future__ import annotations
@@ -173,16 +175,40 @@ class Section:
     name: str
     bars: int
     layers: set = field(default_factory=set)
+    prog: int = 0       # 0 = メインのコード進行, 1 = ブリッジ用の進行
+    mel: int = 0        # どのメロディを使うか
+    gap: bool = False   # 次のセクションの直前に一瞬無音にする（ドロップを際立たせる）
 
 
-SECTIONS = [
+FULL = {"pad", "arp", "kick", "snare", "hat", "ohat", "bass", "sub", "lead", "crash", "fill"}
+
+# 約1分（ショート向け）
+SECTIONS_SHORT = [
     Section("intro", 4, {"pad", "arp_f"}),
-    Section("build", 4, {"pad", "arp", "hat", "bass_soft", "riser", "snare_roll"}),
-    Section("drop", 8, {"pad", "arp", "kick", "snare", "hat", "ohat", "bass", "lead", "crash"}),
-    Section("break", 4, {"pad", "arp_f", "lead_soft", "riser"}),
-    Section("drop2", 8, {"pad", "arp", "kick", "snare", "hat", "ohat", "bass", "lead", "lead_hi", "crash"}),
+    Section("build", 4, {"pad", "arp", "hat", "bass_soft", "riser", "snare_roll"}, gap=True),
+    Section("drop", 8, FULL),
+    Section("break", 4, {"pad", "arp_f", "lead_soft", "riser"}, gap=True),
+    Section("drop2", 8, FULL | {"lead_hi", "arp_hi"}, mel=1),
     Section("outro", 2, {"pad", "arp_f"}),
 ]
+
+# 約3分（通常動画向け）：2回のドロップのあと、ブリッジで雰囲気を変えてラストドロップへ
+SECTIONS_LONG = [
+    Section("intro", 8, {"pad", "arp_f", "kick_f_late"}),
+    Section("build", 8, {"pad", "arp", "hat", "bass_soft", "riser", "snare_roll", "kick_f"}, gap=True),
+    Section("drop", 16, FULL),
+    Section("break", 8, {"pad", "arp_f", "lead_soft", "bass_soft"}),
+    Section("build2", 4, {"pad", "arp", "hat", "riser", "snare_roll", "bass_soft"}, gap=True),
+    Section("drop2", 16, FULL | {"arp_hi"}, mel=1),
+    Section("bridge", 8, {"pad", "arp", "half", "bass", "sub", "lead_soft"}, prog=1, mel=2),
+    Section("build3", 4, {"pad", "arp", "hat", "riser", "snare_roll", "bass_soft"}, gap=True),
+    Section("final", 16, FULL | {"lead_hi", "arp_hi"}),
+    Section("outro", 4, {"pad", "arp_f", "kick_f"}),
+]
+SECTIONS = SECTIONS_SHORT
+
+# ブリッジ用（F → G → Em → Am）
+BRIDGE = [(53, "M"), (55, "M"), (52, "m"), (57, "m")]
 
 # Aマイナーのコード進行（ルートのMIDI番号, 構成音）
 PROGRESSIONS = [
@@ -224,18 +250,30 @@ def _melody(rng, prog) -> list[tuple[float, float, int]]:
     return out
 
 
-def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON DRIVE") -> Path:
+def tom(rng, f0: float) -> np.ndarray:
+    n = int(0.3 * SR)
+    t = np.arange(n) / SR
+    f = f0 * (1 + 0.6 * np.exp(-t * 30))
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 11)
+    return np.tanh(s * 1.8) * 0.6 + rng.standard_normal(n) * np.exp(-t * 60) * 0.1
+
+
+def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON DRIVE",
+            length: str = "short") -> Path:
+    """length="short" で約1分、"long" で約3分の曲を作る"""
     rng = np.random.default_rng(seed)
-    prog = PROGRESSIONS[seed % len(PROGRESSIONS)]
-    melody = _melody(rng, prog)
+    sections = SECTIONS_LONG if length == "long" else SECTIONS_SHORT
+    progs = [PROGRESSIONS[seed % len(PROGRESSIONS)], BRIDGE]
+    melodies = [_melody(rng, progs[0]), _melody(rng, progs[0]), _melody(rng, progs[1])]
     beat = 60 / bpm
     bar = beat * 4
-    total_bars = sum(s.bars for s in SECTIONS)
+    total_bars = sum(s.bars for s in sections)
     tail = 2.5
     N = int((total_bars * bar + tail) * SR)
 
     bus = {k: np.zeros(N) for k in ("drums", "bass", "music", "lead", "fx")}
     kick_env = np.zeros(N)  # サイドチェイン用
+    gaps = []
 
     def put(name, sig, t, gain=1.0):
         i = int(t * SR)
@@ -244,19 +282,30 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
         j = min(N, i + len(sig))
         bus[name][i:j] += sig[: j - i] * gain
 
+    def add_kick(t, gain=0.9, sig=None):
+        put("drums", k_s if sig is None else sig, t, gain)
+        i = int(t * SR)
+        e = np.exp(-np.arange(min(int(beat * SR), N - i)) / SR * 9) * (1 if sig is None else 0.4)
+        kick_env[i:i + len(e)] = np.maximum(kick_env[i:i + len(e)], e)
+
     k_s, sn_s, cl_s = kick(rng), snare(rng), clap(rng)
+    k_f = lowpass(k_s, 250)
     hats = [hat(rng) for _ in range(4)]
     ohat = hat(rng, True)
+    toms = [tom(rng, f) for f in (190, 150, 115, 90)]
 
     bar_i = 0
-    for sec in SECTIONS:
+    for sec in sections:
+        prog = progs[sec.prog]
+        melody = melodies[sec.mel]
         for b in range(sec.bars):
             t0 = bar_i * bar
             root, kind = prog[b % 4]
             tones = [root + i for i in TRIAD[kind]]
             L = sec.layers
-            last_bar = b == sec.bars - 1
             prog_in_sec = b / sec.bars
+            soft = sec.name in ("intro", "break", "outro")
+            fill_bar = "fill" in L and b % 8 == 7
 
             # パッド
             if "pad" in L:
@@ -264,9 +313,8 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                 s = np.zeros(n)
                 for m in tones + [root + 12]:
                     s += supersaw(m, n / SR, voices=5, detune=0.12, rng=rng)
-                cut = 900 if sec.name in ("intro", "break", "outro") else 2200
+                cut = 900 if soft else 2200
                 s = lowpass(s, cut) * adsr(n, 0.25, 0.3, 0.8, 0.3)
-                soft = sec.name in ("intro", "break", "outro")
                 put("music", s, t0, 0.16 if soft else 0.07)
 
             # アルペジオ（16分）
@@ -278,19 +326,19 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                     d = beat / 4
                     n = int(d * 0.95 * SR)
                     s = saw(mtof(m), n) * 0.6 + square(mtof(m + 0.07), n) * 0.4
-                    if "arp_f" in L:
-                        cut = 500 + 1500 * (0.5 + 0.5 * np.sin(2 * np.pi * (bar_i * 16 + k) / 64))
-                    else:
-                        cut = 1500 + 3500 * (0.5 + 0.5 * np.sin(2 * np.pi * (bar_i * 16 + k) / 64))
-                    if sec.name == "build":
+                    lfo = 0.5 + 0.5 * np.sin(2 * np.pi * (bar_i * 16 + k) / 64)
+                    cut = (500 + 1500 * lfo) if "arp_f" in L else (1500 + 3500 * lfo)
+                    if sec.name.startswith("build"):
                         cut *= 0.4 + prog_in_sec
                     s = lowpass(s, cut, reso=1.2) * adsr(n, 0.002, 0.08, 0.2, 0.01)
                     g = 0.2 if "arp_f" in L else 0.11
                     put("music", s, t0 + k * d, g)
-                    # 付点8分ディレイ
-                    put("fx", s, t0 + k * d + beat * 0.75, g * 0.35)
+                    put("fx", s, t0 + k * d + beat * 0.75, g * 0.35)  # 付点8分ディレイ
+                    if "arp_hi" in L and k % 2 == 0:
+                        h = square(mtof(m + 12), n) * adsr(n, 0.002, 0.05, 0.1, 0.01)
+                        put("music", lowpass(h, 6000), t0 + k * d + d, 0.04)
 
-            # ベース（8分刻みのオクターブ）
+            # ベース（8分刻みのオクターブ）＋サブベース
             if "bass" in L or "bass_soft" in L:
                 for k in range(8):
                     m = root - 12 + (12 if k % 2 else 0)
@@ -299,56 +347,85 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                     s = saw(mtof(m), n) + 0.5 * square(mtof(m - 12), n)
                     cut = 500 if "bass_soft" in L else 1100
                     s = lowpass(s, cut, reso=0.8) * adsr(n, 0.003, 0.12, 0.6, 0.02)
-                    put("bass", np.tanh(s * 1.5), t0 + k * d, 0.32)
+                    put("bass", np.tanh(s * 1.5), t0 + k * d, 0.2 if "bass_soft" in L else 0.32)
+            if "sub" in L:
+                n = int(bar * SR)
+                s = np.sin(2 * np.pi * mtof(root - 24) * np.arange(n) / SR) * adsr(n, 0.01, 0.1, 0.9, 0.05)
+                put("bass", s, t0, 0.22)
 
             # リード
             if "lead" in L or "lead_soft" in L:
+                mb = b % 8
                 for pos, ln, m in melody:
-                    mb = b % 8
                     if not (mb * 4 <= pos < (mb + 1) * 4):
                         continue
                     lp = pos % 4
                     oct_ = 12 if "lead_hi" in L and (b // 4) % 2 == 1 else 0
                     n = int(ln * beat * SR)
                     s = supersaw(m + oct_, n / SR, voices=7, detune=0.22, rng=rng)
-                    vib = 1 + 0.003 * np.sin(2 * np.pi * 5.5 * np.arange(n) / SR) * np.linspace(0, 1, n)
-                    s = s * vib
+                    s = s * (1 + 0.003 * np.sin(2 * np.pi * 5.5 * np.arange(n) / SR) * np.linspace(0, 1, n))
                     cut = 1400 if "lead_soft" in L else 5200
                     s = lowpass(s, cut, reso=0.6) * adsr(n, 0.01, 0.2, 0.75, 0.08)
-                    put("lead", s, t0 + lp * beat, 0.16 if "lead_soft" not in L else 0.1)
+                    put("lead", s, t0 + lp * beat, 0.1 if "lead_soft" in L else 0.16)
 
             # ドラム
             if "kick" in L:
                 for q in range(4):
-                    put("drums", k_s, t0 + q * beat, 0.9)
-                    i = int((t0 + q * beat) * SR)
-                    ln = int(beat * SR)
-                    e = np.exp(-np.arange(min(ln, N - i)) / SR * 9)
-                    kick_env[i:i + len(e)] = np.maximum(kick_env[i:i + len(e)], e)
+                    add_kick(t0 + q * beat)
+            if "kick_f" in L or ("kick_f_late" in L and b >= sec.bars // 2):
+                for q in range(4):
+                    add_kick(t0 + q * beat, 0.4, k_f)
+            if "half" in L:  # ハーフタイム（ゆったり重いノリ）
+                for q in (0, 2.5):
+                    add_kick(t0 + q * beat)
+                put("drums", sn_s, t0 + 2 * beat, 0.75)
+                put("drums", cl_s, t0 + 2 * beat + 0.005, 0.65)
+                for e8 in range(8):
+                    put("drums", hats[e8 % 4], t0 + e8 * beat / 2, 0.8 if e8 % 2 else 0.5)
             if "snare" in L:
                 for q in (1, 3):
+                    if fill_bar and q == 3:
+                        continue
                     put("drums", sn_s, t0 + q * beat, 0.7)
                     put("drums", cl_s, t0 + q * beat + 0.005, 0.6)
             if "hat" in L:
                 for e8 in range(16):
-                    if e8 % 2 == 0 and sec.name == "build" and prog_in_sec < 0.5:
+                    if e8 % 2 == 0 and sec.name.startswith("build") and prog_in_sec < 0.5:
+                        continue
+                    if fill_bar and e8 >= 12:
                         continue
                     vel = 1.0 if e8 % 4 == 2 else 0.55
                     put("drums", hats[e8 % 4], t0 + e8 * beat / 4, vel)
             if "ohat" in L:
                 for q in range(4):
                     put("drums", ohat, t0 + q * beat + beat / 2, 0.8)
-            if "snare_roll" in L and b >= sec.bars - 2:
-                steps = 8 if b == sec.bars - 2 else 16
+            if fill_bar:  # 8小節ごとのタムのフィル
+                for k in range(4):
+                    put("drums", toms[k], t0 + 3 * beat + k * beat / 4, 0.8)
+            if "snare_roll" in L and b >= sec.bars - 4:
+                steps = [4, 8, 16, 16][b - (sec.bars - 4)]
                 for k in range(steps):
-                    vel = 0.25 + 0.6 * (k / steps) * (0.5 if steps == 8 else 1)
-                    put("drums", sn_s, t0 + k * bar / steps, vel)
-            if "crash" in L and b == 0:
+                    p = (b - (sec.bars - 4) + k / steps) / 4
+                    put("drums", sn_s, t0 + k * bar / steps, 0.2 + 0.6 * p)
+            if "crash" in L and b % 8 == 0:
                 put("fx", crash(rng), t0, 1.0)
-                put("fx", impact(rng), t0, 0.9)
+                if b == 0:
+                    put("fx", impact(rng), t0, 0.9)
             if "riser" in L and b == sec.bars - 2:
                 put("fx", riser(rng, bar * 2), t0, 1.0)
             bar_i += 1
+        if sec.gap:
+            end = bar_i * bar
+            gaps.append((end - beat / 2, end))
+
+    # ドロップ直前の一瞬の無音（ライザーだけ残す）
+    for g0, g1 in gaps:
+        i, j = int(g0 * SR), int(g1 * SR)
+        fade = np.linspace(1, 0, 400)
+        for k in ("drums", "bass", "music", "lead"):
+            bus[k][i:i + 400] *= fade
+            bus[k][i + 400:j] = 0
+        kick_env[i:j] = 0
 
     # 最後のジャーン
     end_t = total_bars * bar

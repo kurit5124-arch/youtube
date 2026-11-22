@@ -78,6 +78,18 @@ def _noise(h, w, rng, scale) -> np.ndarray:
     return out / (out.max() + 1e-9)
 
 
+def _hue_matrix(deg: float) -> np.ndarray:
+    """RGB の色相を deg 度回す行列（明るさはほぼ保つ）"""
+    c, s_ = np.cos(np.radians(deg)), np.sin(np.radians(deg))
+    k = 1 / 3
+    sq = np.sqrt(k)
+    return np.array([
+        [c + (1 - c) * k, k * (1 - c) - sq * s_, k * (1 - c) + sq * s_],
+        [k * (1 - c) + sq * s_, c + k * (1 - c), k * (1 - c) - sq * s_],
+        [k * (1 - c) - sq * s_, k * (1 - c) + sq * s_, c + k * (1 - c)],
+    ], np.float32)
+
+
 class Post:
     """共通の後処理：ズーム・揺れ・色ずれ・フラッシュ・走査線・周辺減光・粒子感"""
 
@@ -89,6 +101,17 @@ class Post:
         scan = (1 - 0.07 * (np.arange(H) % 3 == 0)).astype(np.float32)
         self.scan = scan[:, None, None]
         self.grain = [(rng.standard_normal((H // 2, W // 2)).astype(np.float32) * 0.018) for _ in range(6)]
+
+    def set_hue_track(self, f: Features):
+        steps = [0, 0, -35, 28, -60]
+        n_drop = np.cumsum(f.drop >= 0.999)
+        target = np.array([steps[min(k, len(steps) - 1)] for k in n_drop], np.float32)
+        hue = np.zeros_like(target)
+        v = 0.0
+        for k, tv in enumerate(target):
+            v += (tv - v) * 0.03
+            hue[k] = v
+        self.hue = hue
 
     def __call__(self, img, i, f: Features, rng):
         W, H = self.W, self.H
@@ -112,6 +135,10 @@ class Post:
         # フラッシュ
         if dr > 0.05:
             img = img + (dr ** 2) * 0.55
+        # ドロップのたびに色味を少し変える（長い曲でも見飽きないように）
+        ang = self.hue[min(i, len(self.hue) - 1)]
+        if abs(ang) > 0.5:
+            img = img @ _hue_matrix(ang).T
         img = img * self.vignette * self.scan
         g = self.grain[i % len(self.grain)]
         img = img + cv2.resize(g, (W, H), interpolation=cv2.INTER_NEAREST)[..., None]
@@ -253,6 +280,7 @@ class NeonDriveScene:
 
         self.particles = Particles(W, H, rng)
         self.post = Post(W, H, rng)
+        self.post.set_hue_track(feats)
         # 円形スペクトラムの角度
         nb = feats.spectrum.shape[1]
         self.ring_angles = np.linspace(np.pi, 1.5 * np.pi, nb)  # 左上の4分の1（右は鏡写し）
@@ -490,6 +518,7 @@ class ImageScene:
         self.bright = (self.src * np.clip((lum - 0.6) / 0.4, 0, 1)[..., None]).astype(np.float32)
         self.particles = Particles(W, H, self.rng)
         self.post = Post(W, H, self.rng)
+        self.post.set_hue_track(feats)
         self.bars = feats.spectrum.shape[1]
         if title:
             self.title_rgb, self.title_a, g = _title_layers(W, H, title, subtitle, int(H * 0.12))
