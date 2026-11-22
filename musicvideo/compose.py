@@ -262,6 +262,59 @@ def _melody(rng, prog, style="synthwave") -> list[tuple[float, float, int]]:
     return out
 
 
+def _hook(rng, prog, style="hard") -> list[tuple[float, float, int]]:
+    """覚えやすいフック（8小節）。2小節のフレーズを A → A' → A(高め) → B と展開する。
+    強拍はコードの音、弱拍はスケールの音でつなぐ。"""
+    rhythms = RHYTHMS[style]
+    r1 = rhythms[int(rng.integers(len(rhythms)))]
+    r2 = rhythms[int(rng.integers(len(rhythms)))]
+    phrase = [(p, ln) for p, ln in r1] + [(4 + p, ln) for p, ln in r2]
+    # 音の上がり下がりの形（スケールの段数）
+    steps = [0] + [int(rng.choice([-2, -1, -1, 1, 1, 2, 3])) for _ in phrase[1:]]
+    contour = np.cumsum(steps)
+    contour -= int(round(contour.mean()))
+    lo, hi = 64, 81  # だいたいの音域（Aマイナー基準）
+
+    scale_pcs = {x % 12 for x in SCALE}
+
+    def bar_scale(root, kind):
+        """コードに合わせたスケール（E のコードなら G を G# にする）"""
+        cpcs = {(root + i) % 12 for i in TRIAD[kind]}
+        return [x + 1 if (x + 1) % 12 in cpcs and (x + 1) % 12 not in scale_pcs else x for x in SCALE]
+
+    def near(cands, target):
+        return min(cands, key=lambda m: (abs(m - target), m))
+
+    out = []
+    for ph in range(4):
+        lift = {0: 0, 1: 0, 2: 2, 3: 1}[ph]
+        cont = contour.copy()
+        if ph == 1:      # A': 後半を少し変える
+            cont[len(r1):] += int(rng.choice([-1, 1, 2]))
+        if ph == 3:      # B: 最後は上がってから着地
+            k = len(cont)
+            cont[k // 2:] = cont[k // 2:] + np.arange(k - k // 2) // 2 + 1
+        prev = None
+        for (pos, ln), c in zip(phrase, cont):
+            bar = ph * 2 + int(pos // 4)
+            root, kind = prog[bar % 4]
+            deg = 7 + int(c) + lift  # SCALE の真ん中あたりを基準に
+            target = SCALE[int(np.clip(deg, 0, len(SCALE) - 1))]
+            chord = [m for o in (0, 12, 24) for m in (root + o + i for i in TRIAD[kind]) if lo <= m <= hi]
+            if pos % 1 == 0 or prev is None:
+                m = near(chord, target)
+            else:
+                m = near([x for x in bar_scale(root, kind) if lo <= x <= hi], target)
+            if prev is not None and abs(m - prev) > 9:  # 大きく飛びすぎない
+                m = near(chord if pos % 1 == 0 else bar_scale(root, kind), prev + np.sign(m - prev) * 5)
+            out.append((ph * 8 + pos, ln, int(m)))
+            prev = m
+        # フレーズの最後の音は長めに伸ばして区切る
+        p_, l_, m_ = out[-1]
+        out[-1] = (p_, max(l_, 8 - (p_ - ph * 8)), m_)
+    return out
+
+
 def tom(rng, f0: float) -> np.ndarray:
     n = int(0.3 * SR)
     t = np.arange(n) / SR
@@ -275,7 +328,8 @@ DEFAULT_BPM = {"hard": 140, "synthwave": 128}
 
 
 def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "NEON DRIVE",
-            length: str = "short", style: str = "hard", key: int = 0) -> Path:
+            length: str = "short", style: str = "hard", key: int = 0,
+            melody_seed: int | None = None) -> Path:
     """length="short" で約1分、"long" で約3分の曲を作る。
     style="hard" は速くて激しいダークシンセ、"synthwave" はゆったりめのシンセウェーブ。"""
     rng = np.random.default_rng(seed)
@@ -284,6 +338,10 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
     sections = SECTIONS_LONG if length == "long" else SECTIONS_SHORT
     progs = [PROGRESSIONS[seed % len(PROGRESSIONS)], BRIDGE]
     melodies = [_melody(rng, progs[0], style), _melody(rng, progs[0], style), _melody(rng, progs[1], style)]
+    if melody_seed is not None:
+        # メロディだけ別の乱数で作り直す（コード・ドラム・音色はそのまま）
+        mrng = np.random.default_rng(melody_seed)
+        melodies = [_hook(mrng, progs[0], style), _hook(mrng, progs[0], style), _hook(mrng, progs[1], style)]
     # key: 半音いくつ上げ下げするか（-3 なら Aマイナー → F#マイナー）
     progs = [[(r + key, k) for r, k in p] for p in progs]
     melodies = [[(pos, ln, m + key) for pos, ln, m in mel] for mel in melodies]
