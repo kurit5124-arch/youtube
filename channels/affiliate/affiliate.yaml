@@ -177,3 +177,140 @@ themes:
       - name: 漢字クイズ・パズル
         comment: 脳トレにもなる
         search: 漢字 パズル 本
+
+  # ===== 追加ネタ用のテーマ =====
+  - id: ocha
+    name: お茶好きな人へ
+    keywords: [お茶, 緑茶, 紅茶]
+    items:
+      - {name: 静岡茶・八女茶などの緑茶, comment: 飲み比べると違いがわかる, search: 緑茶 茶葉 人気}
+      - {name: 急須, comment: 茶葉から淹れるとおいしさが変わる, search: 急須 人気}
+      - {name: 紅茶ティーバッグ, comment: 手軽に本格的な紅茶, search: 紅茶 ティーバッグ 人気}
+
+  - id: choco
+    name: チョコ好きな人へ
+    keywords: [チョコレート, チョコ, カカオ]
+    items:
+      - {name: 高カカオチョコレート, comment: 甘さひかえめで大人向け, search: 高カカオ チョコレート}
+      - {name: 有名店のチョコレート, comment: ちょっとしたプレゼントにも, search: チョコレート ギフト 人気}
+      - {name: ココア, comment: 寒い日にぴったり, search: ピュアココア 人気}
+
+  - id: ofuro
+    name: お風呂時間を楽しみたい人へ
+    keywords: [お風呂, 入浴]
+    items:
+      - {name: 入浴剤, comment: いつものお風呂がリラックスタイムに, search: 入浴剤 人気}
+      - {name: お風呂の温度計, comment: ぬるめの温度をチェック, search: お風呂 温度計}
+      - {name: 脱衣所用の小型ヒーター, comment: 冬の温度差対策に, search: 脱衣所 ヒーター 小型}
+
+  - id: kanso
+    name: 冬の乾燥が気になる人へ
+    keywords: [加湿, 乾燥]
+    items:
+      - {name: 加湿器, comment: 部屋の湿度を手軽にキープ, search: 加湿器 人気}
+      - {name: 温湿度計, comment: 湿度40〜60%をチェック, search: 温湿度計 デジタル}
+      - {name: のどあめ・マスク, comment: 乾燥する季節のおともに, search: 保湿 マスク 夜用}
+
+  - id: kintore
+    name: 体を鍛えたい人へ
+    keywords: [筋トレ, ウォーキング, 運動]
+    items:
+      - {name: トレーニングマット, comment: 家での筋トレやストレッチに, search: トレーニングマット 人気}
+      - {name: ウォーキングシューズ, comment: クッション性で疲れにくい, search: ウォーキングシューズ 人気}
+      - {name: プロテイン, comment: 運動のおともに, search: プロテイン 人気}
+
+  - id: mizu
+    name: こまめに水分補給したい人へ
+    keywords: [水分補給]
+    items:
+      - {name: 水筒・ステンレスボトル, comment: 持ち歩けばこまめに飲める, search: 水筒 ステンレス 人気}
+      - {name: ミネラルウォーター（箱買い）, comment: 重い水は通販がラク, search: ミネラルウォーター 2L 箱}
+      - {name: 浄水ポット, comment: 水道水をおいしく, search: 浄水ポット 人気}
+
+  - id: hamigaki
+    name: 歯を大切にしたい人へ
+    keywords: [歯みがき, 歯ブラシ]
+    items:
+      - {name: 電動歯ブラシ, comment: 手みがきより手軽にしっかり, search: 電動歯ブラシ 人気}
+      - {name: デンタルフロス, comment: 歯の間の汚れに, search: デンタルフロス 人気}
+      - {name: 歯ブラシ（まとめ買い）, comment: 1か月ごとの交換に, search: 歯ブラシ まとめ買い}
+
+  - id: me
+    name: 目が疲れやすい人へ
+    keywords: [目の疲れ]
+    items:
+      - {name: ホットアイマスク, comment: 目を温めてリラックス, search: ホットアイマスク 人気}
+      - {name: ブルーライトカットメガネ, comment: パソコン作業のおともに, search: ブルーライトカット メガネ}
+      - {name: 目もとのマッサージャー, comment: 寝る前のリラックスに, search: アイウォーマー 充電式}
+
+  - id: ryori
+    name: 毎日のごはんを楽しみたい人へ
+    keywords: [卵, お米, 発酵食品, 納豆, 料理]
+    items:
+      - {name: お米（銘柄米）, comment: 重いお米は通販がラク, search: コシヒカリ 5kg}
+      - {name: 米びつ（冷蔵庫用）, comment: 野菜室でおいしく保存, search: 米びつ 冷蔵庫}
+      - {name: 卵焼き器, comment: きれいな卵焼きが作れる, search: 卵焼き器 人気}
+
+  - id: kaji
+    name: 家事をラクにしたい人へ
+    keywords: [掃除, 洗濯, 家事]
+    items:
+      - {name: 重曹・セスキ, comment: 油汚れの掃除に, search: 重曹 掃除用}
+      - {name: 部屋干し用洗剤, comment: 部屋干しのにおい対策に, search: 部屋干し 洗剤 人気}
+      - {name: ハンディ掃除機, comment: 気づいたときにさっと掃除, search: ハンディクリーナー コードレス 人気}
+
+  - id: shokubutsu
+    name: グリーンのある暮らしをしたい人へ
+    keywords: [観葉植物, 植物]
+    items:
+      - {name: 初心者向けの観葉植物, comment: 育てやすい種類から, search: 観葉植物 初心者 育てやすい}
+      - {name: おしゃれな植木鉢, comment: 部屋の雰囲気が変わる, search: 植木鉢 おしゃれ}
+      - {name: 水やりチェッカー, comment: 水のやりすぎ防止に, search: 水やり チェッカー}
+
+  - id: shodobutsu
+    name: 小動物好きな人へ
+    keywords: [ハムスター, うさぎ]
+    items:
+      - {name: かじり木・おもちゃ, comment: 伸び続ける歯のケアに, search: かじり木 小動物}
+      - {name: 牧草, comment: うさぎの主食, search: チモシー 牧草}
+      - {name: 小動物用ケージ, comment: 広めで快適に, search: ハムスター ケージ 人気}
+
+  - id: dokusho
+    name: 本が好きな人へ
+    keywords: [読書, 本, 鉛筆, 文房具]
+    items:
+      - {name: 電子書籍リーダー（楽天Kobo）, comment: たくさんの本を1台で, search: 楽天kobo 電子書籍リーダー}
+      - {name: ブックライト, comment: 寝る前の読書に, search: ブックライト クリップ}
+      - {name: 人気の文房具, comment: 書く時間が楽しくなる, search: 文房具 人気 ボールペン}
+
+  - id: sumaho
+    name: スマホを大事に使いたい人へ
+    keywords: [スマホ]
+    items:
+      - {name: モバイルバッテリー, comment: 外出先の電池切れに, search: モバイルバッテリー 人気}
+      - {name: 画面保護フィルム, comment: 傷から画面を守る, search: スマホ 保護フィルム ガラス}
+      - {name: 急速充電器, comment: 充電時間を短く, search: 急速充電器 USB-C}
+
+  - id: fuyu
+    name: あったか冬ごもりしたい人へ
+    keywords: [こたつ, 鍋, 土鍋]
+    items:
+      - {name: こたつ布団, comment: ふかふかで暖かい, search: こたつ布団 人気}
+      - {name: 土鍋, comment: 冷めにくくて鍋料理に最適, search: 土鍋 人気}
+      - {name: 鍋の素・お取り寄せ鍋, comment: 手軽にごちそう鍋, search: お取り寄せ 鍋セット}
+
+  - id: event
+    name: 季節のイベントを楽しみたい人へ
+    keywords: [クリスマス, お正月, おせち]
+    items:
+      - {name: クリスマスケーキ（お取り寄せ）, comment: 早めの予約がおすすめ, search: クリスマスケーキ 通販}
+      - {name: おせち料理, comment: 年末の準備がラクに, search: おせち 2027 予約}
+      - {name: 鏡もち, comment: お正月の飾りに, search: 鏡餅 飾り}
+
+  - id: hachimitsu
+    name: はちみつ好きな人へ
+    keywords: [はちみつ]
+    items:
+      - {name: 国産はちみつ, comment: 花の種類で味が違う, search: 国産 はちみつ 人気}
+      - {name: マヌカハニー, comment: 特別なはちみつ, search: マヌカハニー 人気}
+      - {name: はちみつ用のディスペンサー, comment: たれにくく使いやすい, search: はちみつ 容器 液だれしない}
