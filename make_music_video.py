@@ -21,6 +21,7 @@ from pathlib import Path
 from musicvideo.analyze import analyze
 from musicvideo.compose import compose
 from musicvideo.render import render_video
+from musicvideo.thumbnail import make_thumbnails
 
 
 def main() -> int:
@@ -73,6 +74,11 @@ def main() -> int:
     print(f"[3/3] 映像を描画中…（{W}x{H}, {args.fps}fps）")
     render_video(audio, feats, video, W, H, kind=kind, opts=opts, seconds=args.preview,
                  workers=args.workers, thumbnail=thumb)
+
+    if not args.image:
+        print("[+] サムネイルを作成中…（a/b/c の3種類）")
+        bpm = f"{args.bpm or (140 if args.style == 'hard' else 128):g}"
+        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed)
 
     meta = {
         "title": f"{args.title} | {genre.title()} Original Track",

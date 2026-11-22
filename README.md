@@ -87,7 +87,9 @@ python make_music_video.py --title "MIDNIGHT RUN"
 python make_music_video.py --preview 8      # 最初の8秒だけ（確認用）
 ```
 
-`output/` に mp4・mp3（曲だけ）・サムネイル jpg・タイトル/説明文の json ができます。
+`output/` に mp4・mp3（曲だけ）・タイトル/説明文の json と、YouTube 用サムネイル（1280x720）が3種類
+（`_thumb_a` 中央に大きなクロム文字 / `_thumb_b` 赤く斜めの文字 / `_thumb_c` グリッチ）できます。
+サムネイルだけ作り直すときは `python -m musicvideo.thumbnail output/曲.mp3 --title 曲名`。
 
 - **曲**：既定は 140 BPM の激しいダークシンセ（`--style hard`）。16分で転がる歪んだベース、裏拍のコードの刻み、
   ハネ気味のハイハット、ビルドでだんだん細かくなるキックとスネアロール、ドロップ直前の一瞬の無音。
