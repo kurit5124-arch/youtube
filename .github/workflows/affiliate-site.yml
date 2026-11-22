@@ -8,6 +8,9 @@ on:
       - shorts/affiliate.py
       - scripts/build_affiliate_site.py
       - .github/workflows/affiliate-site.yml
+  schedule:
+    # 毎日 17:50 (日本時間) に作り直して、おすすめ商品を最新の人気商品に入れ替える
+    - cron: "50 8 * * *"
   workflow_dispatch:
 
 permissions:
@@ -28,12 +31,15 @@ jobs:
     env:
       AMAZON_ASSOCIATE_TAG: ${{ vars.AMAZON_ASSOCIATE_TAG }}
       RAKUTEN_AFFILIATE_ID: ${{ vars.RAKUTEN_AFFILIATE_ID }}
+      # 楽天の商品検索API（人気商品を自動で選ぶ）。未設定なら検索結果へのリンクのまま
+      RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
+      RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install PyYAML
+      - run: pip install PyYAML requests
       - run: python scripts/build_affiliate_site.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

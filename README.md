@@ -105,6 +105,17 @@ channels/affiliate/affiliate.yaml ─────┴─▶ 動画のテーマに
    `channels/affiliate/` を main に push すると `https://<ユーザー名>.github.io/<リポジトリ名>/` に公開されます
 6. 新しいチャンネルの **プロフィールのリンク** にまとめページの URL を設定
 
+### おすすめ商品を自動で選ぶ（楽天の商品検索API・任意）
+キーを登録すると、`affiliate.yaml` の `search:` の商品が「レビューが多く評価の高い具体的な商品」に
+自動で置き換わり、リンクはあなたの楽天アフィリエイトリンクになります（まとめページは毎日更新）。
+
+1. [楽天ウェブサービス](https://webservice.rakuten.co.jp/) にログインし、**アプリID発行** → 新規アプリを作成
+   - 許可されたWebサイト: `kurit5124-arch.github.io`（まとめページのドメイン）
+2. 表示された **アプリID**（UUID 形式）と **アクセスキー**（`pk_` で始まる）を、
+   GitHub の Secrets に `RAKUTEN_APP_ID` / `RAKUTEN_ACCESS_KEY` として登録
+
+キーが無いときや API が失敗したときは、今までどおり楽天の検索結果へのリンクになります。
+
 ### 試す
 ```bash
 python main.py --channel affiliate                  # 日替わりのネタで1本作る

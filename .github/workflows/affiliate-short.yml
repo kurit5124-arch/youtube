@@ -5,6 +5,7 @@ name: アフィリエイト用チャンネルに毎日投稿
 # 必要な Secrets: YT2_REFRESH_TOKEN（別チャンネルで取得したもの）
 #   YT2_CLIENT_ID / YT2_CLIENT_SECRET は省略するとメインと同じ YT_CLIENT_ID / YT_CLIENT_SECRET を使う
 # 任意の Variables: AMAZON_ASSOCIATE_TAG / RAKUTEN_AFFILIATE_ID
+# 任意の Secrets: RAKUTEN_APP_ID / RAKUTEN_ACCESS_KEY（人気商品を自動で選ぶ）
 
 on:
   schedule:
@@ -35,6 +36,8 @@ jobs:
       YT_REFRESH_TOKEN: ${{ secrets.YT2_REFRESH_TOKEN }}
       AMAZON_ASSOCIATE_TAG: ${{ vars.AMAZON_ASSOCIATE_TAG }}
       RAKUTEN_AFFILIATE_ID: ${{ vars.RAKUTEN_AFFILIATE_ID }}
+      RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
+      RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v4
 

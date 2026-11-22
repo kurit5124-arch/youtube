@@ -12,6 +12,7 @@ from urllib.parse import quote, quote_plus
 
 import yaml
 
+from . import rakuten_api
 from .models import VideoPlan
 
 DISCLOSURE = "※この説明欄・リンク先にはアフィリエイト広告（PR）が含まれます。"
@@ -62,6 +63,36 @@ def item_links(item: dict, cfg: dict) -> list[Link]:
     return links
 
 
+def enrich_theme(theme: dict, cfg: dict) -> dict:
+    """search: の商品を、楽天の商品検索APIで選んだ「人気の具体的な商品」に置き換える。
+
+    API のキーが無いとき・失敗したときは、今までどおり検索結果へのリンクのまま。
+    """
+    if theme.get("_enriched") or not (cfg.get("auto_pick", True) and rakuten_api.available()):
+        return theme
+    used: set[str] = set()
+    items = []
+    for it in theme.get("items") or []:
+        kw = it.get("search")
+        if not kw or it.get("url") or it.get("auto_pick") is False:
+            items.append(it)
+            continue
+        got = rakuten_api.pick(kw, cfg.get("rakuten_id", ""), site_url(cfg), used,
+                               int(cfg.get("min_reviews", 20)), float(cfg.get("min_review_average", 4.0)))
+        if not got:
+            items.append(it)
+            continue
+        used.add(got["code"])
+        note = f"★{got['review_average']:.1f}（レビュー{got['review_count']:,}件）"
+        if got["price"]:
+            note += f"・{got['price']:,}円前後"
+        items.append({"name": got["name"], "shop": "楽天", "url": got["url"],
+                      "comment": f"{it.get('comment', '')}　{note}".strip(), "search": None})
+        print(f"[rakuten] 「{kw}」→ {got['name']}")
+    theme = dict(theme, items=items, _enriched=True)
+    return theme
+
+
 def choose_theme(plan: VideoPlan, cfg: dict) -> dict | None:
     """タイトル・タグ・台本にキーワードが一番多く入っているテーマを選ぶ。"""
     themes = cfg.get("themes") or []
@@ -88,6 +119,7 @@ def apply(plan: VideoPlan, cfg: dict) -> dict | None:
     theme = choose_theme(plan, cfg)
     if not theme:
         return None
+    theme = enrich_theme(theme, cfg)
 
     lines: list[str] = []
     for item in (theme.get("items") or [])[: int(cfg.get("max_items_in_description", 3))]:
@@ -146,7 +178,7 @@ def build_site(cfg: dict, out_dir: Path) -> Path:
     """affiliate.yaml からテーマごとの商品一覧ページ（index.html）を作る。"""
     e = html.escape
     title = cfg.get("site_title", "紹介アイテムまとめ")
-    themes = cfg.get("themes") or []
+    themes = [enrich_theme(t, cfg) for t in cfg.get("themes") or []]
     nav = "".join(f'<a href="#{e(t["id"])}">{e(t["name"])}</a>' for t in themes)
     secs = []
     for t in themes:
