@@ -32,8 +32,15 @@ python main.py --date 2026-12-25   # 日付を指定
 
 ## 2. 毎日自動で動かす（GitHub Actions）
 
-このリポジトリを GitHub に置くだけで、`.github/workflows/daily-short.yml` が
-**毎日 6:40（日本時間）** に動画を作り始め、朝7時ごろに投稿されます。時刻は `cron` の行で変えられます。
+このリポジトリを GitHub に置くだけで、`.github/workflows/daily-short.yml` が毎日3本の動画を作って投稿します。
+
+| 時間（日本時間） | 内容 |
+|---|---|
+| 朝 7時ごろ | 「今日は何の日」クイズ（記念日の説明＋何年？3択クイズ3問） |
+| 夜 19時ごろ | 雑学（`topics.yaml` から） |
+| 夜 21時ごろ | 雑学（`topics.yaml` の別のネタ） |
+
+時刻は `cron` の行で変えられます（UTC で書きます）。
 
 - 手動実行: GitHub の **Actions → 毎日ショート動画を作って投稿 → Run workflow**
 - できた動画は各実行ページの **Artifacts** からダウンロードできます
@@ -121,6 +128,7 @@ python scripts/build_affiliate_site.py              # まとめページを site
 - **`topics.yaml`** … 雑学ネタ帳。書き足すほどネタが増えます
 - **`assets/bgm/`** … BGM。プログラムで作曲したオリジナル曲が3曲入っていて、日替わりで使われます。`python scripts/make_bgm.py` で作り直せます。好きな曲（著作権フリーのもの）の mp3 を置けば追加できます
 - **`shorts/render.py`** … 色・レイアウト（`PALETTES` で配色を追加）
+- **`shorts/illust.py`** … 背景イラスト（Noto Color Emoji）。言葉とイラストの対応表 `KEYWORDS` に追加できます
 
 ## 注意
 

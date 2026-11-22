@@ -11,7 +11,7 @@ from .models import VideoPlan
 def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_silent: bool = False) -> Path:
     workdir.mkdir(parents=True, exist_ok=True)
     font = render.find_font(cfg.get("font"))
-    max_len = float(cfg.get("max_seconds", 58))
+    max_len = plan.max_seconds or float(cfg.get("max_seconds", 58))
     gap = float(cfg.get("scene_gap", 0.35))
 
     # 1) 音声。長すぎたら item シーン（クイズなら1問まるごと）を後ろから削る

@@ -5,6 +5,7 @@
 #   today  : Wikipedia「今日は何の日」だけ
 #   topics : topics.yaml の雑学ネタ（日替わり）
 source: auto
+topics_per_day: 2     # 雑学を1日に何本出すか（ネタが重ならないように使う）
 timezone: Asia/Tokyo
 
 # 読み上げ音声（Edge TTS・無料）
@@ -24,7 +25,9 @@ outro_narration: 明日もお楽しみに！チャンネル登録よろしくお
 
 today:
   format: quiz           # quiz = 3択「何年？」クイズ / list = 出来事の紹介
-  quiz_max_chars: 36     # クイズの問題文の最大文字数（長いと3問入らない）
+  quiz_max_chars: 36     # クイズの問題文の最大文字数
+  quiz_max_seconds: 90   # クイズ動画の最大秒数（3問＋記念日の説明が入るように長め）
+  observance_max_chars: 70  # 「今日は何の日」の説明の最大文字数
   num_events: 3          # 紹介する出来事の数
   include_observance: true  # 記念日も紹介する
   min_year: 1600         # これより古い出来事は基本的に選ばない
