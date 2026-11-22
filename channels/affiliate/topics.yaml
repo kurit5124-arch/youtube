@@ -5,6 +5,434 @@
 # コツ: affiliate.yaml の各テーマの keywords がタイトルや tags に入るネタにすると、
 #       そのテーマの商品リンクが説明欄に自動で入ります。
 
+# ===== 商品紹介（選び方）動画 =====
+# header に【PR】、タイトルにも【PR】を入れて、広告だとわかるようにしています（ステマ規制対策）。
+# products: に書いた商品が、説明欄とまとめページに楽天リンクで自動で載ります。
+
+- title: 加湿器の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "💧"
+  youtube_title: "【PR】加湿器の選び方 3つのポイント #shorts"
+  hook: 加湿器、どれを買えばいいか迷っていませんか？選び方のポイントを3つ紹介します。
+  hook_text: "加湿器の\n選び方"
+  points:
+    - text: タイプで選ぶ
+      narration: スチーム式は加湿力が高いけど電気代は高め。気化式は電気代が安め。超音波式は静かで手ごろですが、こまめなお手入れが必要です。
+    - text: 部屋の広さで選ぶ
+      narration: 商品に書いてある適用畳数を見て、使う部屋の広さに合ったものを選びましょう。
+    - text: お手入れのしやすさ
+      narration: タンクが洗いやすいかどうかも大事です。お手入れがラクだと清潔に使い続けられます。
+  tags: [加湿器, 乾燥, 選び方, shorts]
+  products:
+    - {name: 加湿器（人気ランキング）, comment: レビューの多い人気モデル, search: 加湿器 人気}
+    - {name: スチーム式加湿器, comment: 加湿力重視なら, search: スチーム式 加湿器}
+    - {name: 気化式加湿器, comment: 電気代をおさえたいなら, search: 気化式 加湿器}
+
+- title: 枕の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🛏️"
+  youtube_title: "【PR】枕の選び方 3つのポイント #shorts"
+  hook: 朝起きると首や肩がつらい人へ。枕の選び方のポイントです。
+  hook_text: "枕の\n選び方"
+  points:
+    - text: 高さが一番大事
+      narration: あお向けに寝たとき、首が自然な角度になる高さが目安です。高さを調節できる枕もあります。
+    - text: 寝返りしやすい幅
+      narration: 人は寝ている間に何度も寝返りを打つので、頭が落ちない幅のある枕がおすすめです。
+    - text: かたさは好みで
+      narration: 低反発や羽根、パイプなど素材でかたさが変わります。好みのかたさを選びましょう。
+  tags: [枕, 睡眠, 選び方, shorts]
+  products:
+    - {name: 高さ調節できる枕, comment: 自分に合う高さにできる, search: 枕 高さ調整}
+    - {name: 低反発枕, comment: 頭を包みこむ感触, search: 低反発枕 人気}
+    - {name: 横向き寝用の枕, comment: 横向きで寝る人に, search: 横向き寝 枕}
+
+- title: 電動歯ブラシの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🪥"
+  youtube_title: "【PR】電動歯ブラシの選び方 3つのポイント #shorts"
+  hook: 電動歯ブラシ、気になっている人へ。選び方のポイントです。
+  hook_text: "電動歯ブラシの\n選び方"
+  points:
+    - text: 動き方で選ぶ
+      narration: 細かく振動する音波式や、ブラシが回転する回転式など、動き方にいくつか種類があります。
+    - text: 替えブラシの値段
+      narration: 替えブラシは定期的に買うものなので、本体だけでなく替えブラシの値段も確認しましょう。
+    - text: 充電の持ち
+      narration: 充電が長く持つものだと、旅行や出張にも持っていきやすいです。
+  tags: [電動歯ブラシ, 歯みがき, 選び方, shorts]
+  products:
+    - {name: 電動歯ブラシ（人気）, comment: レビューの多い人気モデル, search: 電動歯ブラシ 人気}
+    - {name: 音波式電動歯ブラシ, comment: 細かい振動でみがく, search: 音波 電動歯ブラシ}
+    - {name: 電動歯ブラシの替えブラシ, comment: 定期的な交換に, search: 電動歯ブラシ 替えブラシ}
+
+- title: モバイルバッテリーの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🔋"
+  youtube_title: "【PR】モバイルバッテリーの選び方 3つのポイント #shorts"
+  hook: スマホの電池切れ対策に。モバイルバッテリーの選び方です。
+  hook_text: "モバイル\nバッテリーの\n選び方"
+  points:
+    - text: 容量で選ぶ
+      narration: 1万ミリアンペアアワー前後あれば、多くのスマホを2回くらい充電できると言われています。
+    - text: 急速充電に対応しているか
+      narration: スマホが急速充電に対応しているなら、バッテリーも急速充電対応のものを選ぶと早く充電できます。
+    - text: PSEマークを確認
+      narration: 日本で売られているモバイルバッテリーには、安全の基準を満たしたPSEマークが必要です。
+  tags: [モバイルバッテリー, スマホ, 選び方, shorts]
+  products:
+    - {name: モバイルバッテリー（人気）, comment: レビューの多い人気モデル, search: モバイルバッテリー 人気}
+    - {name: 薄型・軽量モバイルバッテリー, comment: 持ち歩きやすい, search: モバイルバッテリー 薄型 軽量}
+    - {name: 大容量モバイルバッテリー, comment: 旅行や災害の備えに, search: モバイルバッテリー 大容量}
+
+- title: 水筒の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🥤"
+  youtube_title: "【PR】水筒の選び方 3つのポイント #shorts"
+  hook: 毎日使う水筒、選び方で使いやすさが変わります。
+  hook_text: "水筒の\n選び方"
+  points:
+    - text: 保温・保冷ならステンレス
+      narration: 温かさや冷たさを長く保ちたいなら、真空断熱のステンレスボトルがおすすめです。
+    - text: 容量は使い方で
+      narration: 通勤や通学なら500ミリリットル前後、長い外出なら大きめなど、使い方で選びましょう。
+    - text: 洗いやすさ
+      narration: パーツが少ないものや、口が広いものは洗いやすく、清潔に使えます。
+  tags: [水筒, 水分補給, 選び方, shorts]
+  products:
+    - {name: ステンレス水筒（人気）, comment: 保温・保冷に, search: 水筒 ステンレス 人気}
+    - {name: 洗いやすい水筒, comment: パーツが少なくてラク, search: 水筒 洗いやすい}
+    - {name: 大容量の水筒, comment: 長い外出や運動に, search: 水筒 1リットル}
+
+- title: コードレス掃除機の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🧹"
+  youtube_title: "【PR】コードレス掃除機の選び方 3つのポイント #shorts"
+  hook: さっと掃除できるコードレス掃除機。選び方のポイントです。
+  hook_text: "コードレス\n掃除機の\n選び方"
+  points:
+    - text: 重さをチェック
+      narration: 軽いほど高い所や階段の掃除がラクです。毎日使うなら重さは大事なポイントです。
+    - text: 使える時間
+      narration: 1回の充電で使える時間を確認して、家の広さに足りるか見ておきましょう。
+    - text: ゴミ捨てのしやすさ
+      narration: ゴミ捨てがワンタッチでできるものだと、手を汚さずに済みます。
+  tags: [掃除機, 掃除, 選び方, shorts]
+  products:
+    - {name: コードレス掃除機（人気）, comment: レビューの多い人気モデル, search: コードレス掃除機 人気}
+    - {name: 軽量コードレス掃除機, comment: 軽くて使いやすい, search: コードレス掃除機 軽量}
+    - {name: ハンディクリーナー, comment: 机の上や車内に, search: ハンディクリーナー コードレス}
+
+- title: 入浴剤の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🛁"
+  youtube_title: "【PR】入浴剤の選び方 3つのポイント #shorts"
+  hook: いつものお風呂を特別に。入浴剤の選び方です。
+  hook_text: "入浴剤の\n選び方"
+  points:
+    - text: 目的で選ぶ
+      narration: 炭酸系、香りでリラックスするもの、保湿成分入りなど、目的に合わせて選びましょう。
+    - text: 香りは好みで
+      narration: ラベンダーや柑橘など、好きな香りを選ぶとお風呂の時間がもっと楽しくなります。
+    - text: 追いだきできるか確認
+      narration: 入浴剤によっては追いだきできないものもあるので、パッケージの注意書きを確認しましょう。
+  tags: [入浴剤, お風呂, 選び方, shorts]
+  products:
+    - {name: 入浴剤（人気）, comment: レビューの多い人気商品, search: 入浴剤 人気}
+    - {name: 炭酸系入浴剤, comment: しゅわしゅわ発泡タイプ, search: 炭酸 入浴剤}
+    - {name: 入浴剤ギフトセット, comment: プレゼントにも, search: 入浴剤 ギフト}
+
+- title: コーヒーミルの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "☕"
+  youtube_title: "【PR】コーヒーミルの選び方 3つのポイント #shorts"
+  hook: 挽きたてのコーヒーは香りが違います。コーヒーミルの選び方です。
+  hook_text: "コーヒーミルの\n選び方"
+  points:
+    - text: 手動か電動か
+      narration: 手動はじっくり挽く時間も楽しめて、電動はボタンひとつで早く挽けます。
+    - text: 刃の種類
+      narration: うすで挽くタイプは粒の大きさがそろいやすく、プロペラ式は手ごろで手軽です。
+    - text: お手入れのしやすさ
+      narration: 分解して掃除できるものだと、いつも新鮮な香りを楽しめます。
+  tags: [コーヒーミル, コーヒー, 選び方, shorts]
+  products:
+    - {name: 手動コーヒーミル, comment: 挽く時間も楽しめる, search: コーヒーミル 手動 人気}
+    - {name: 電動コーヒーミル, comment: ボタンひとつで手軽, search: コーヒーミル 電動 人気}
+    - {name: コーヒー豆（お試し）, comment: 飲み比べにも, search: コーヒー豆 お試し セット}
+
+- title: 土鍋の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🍲"
+  youtube_title: "【PR】土鍋の選び方 3つのポイント #shorts"
+  hook: 鍋の季節。土鍋の選び方のポイントです。
+  hook_text: "土鍋の\n選び方"
+  points:
+    - text: 人数でサイズを選ぶ
+      narration: 1人から2人なら6号前後、3人から4人なら8号前後が目安とされています。
+    - text: IHで使えるか確認
+      narration: 普通の土鍋はIHで使えないものが多いので、IHの家はIH対応のものを選びましょう。
+    - text: 最初に目止めをする
+      narration: 新しい土鍋は、最初におかゆを炊く目止めをすると、ひび割れしにくくなります。
+  tags: [土鍋, 鍋, 冬, 選び方, shorts]
+  months: [10, 11, 12, 1, 2, 3]
+  products:
+    - {name: 土鍋（人気）, comment: レビューの多い人気商品, search: 土鍋 人気}
+    - {name: IH対応の土鍋, comment: IHの家でも使える, search: 土鍋 IH対応}
+    - {name: 1人用の土鍋, comment: 1人鍋や鍋焼きうどんに, search: 土鍋 一人用}
+
+- title: こたつ布団の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🔥"
+  youtube_title: "【PR】こたつ布団の選び方 3つのポイント #shorts"
+  hook: こたつ布団、サイズ選びで失敗しないために。
+  hook_text: "こたつ布団の\n選び方"
+  points:
+    - text: こたつのサイズに合わせる
+      narration: こたつ布団は、こたつの天板の大きさや形に合ったサイズを選びましょう。
+    - text: 厚みで暖かさが変わる
+      narration: 厚手の布団は暖かく、薄掛けタイプはすっきりして収納もしやすいです。
+    - text: 洗えると清潔
+      narration: 洗濯機で洗えるタイプだと、食べこぼしなども気にせず清潔に使えます。
+  tags: [こたつ, 冬, 選び方, shorts]
+  months: [10, 11, 12, 1, 2]
+  products:
+    - {name: こたつ布団（人気）, comment: レビューの多い人気商品, search: こたつ布団 人気}
+    - {name: 洗えるこたつ布団, comment: 清潔に使える, search: こたつ布団 洗える}
+    - {name: 薄掛けこたつ布団, comment: すっきり使える, search: こたつ布団 薄掛け}
+
+- title: トレーニングマットの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🧘"
+  youtube_title: "【PR】トレーニングマットの選び方 3つのポイント #shorts"
+  hook: 家で筋トレやストレッチをするなら、マットがあると快適です。
+  hook_text: "トレーニング\nマットの\n選び方"
+  points:
+    - text: 厚さで選ぶ
+      narration: 厚めのマットはひざやひじが痛くなりにくく、薄めは安定感があります。
+    - text: すべりにくさ
+      narration: 表面がすべりにくいと、動いてもずれにくく安心です。
+    - text: しまいやすさ
+      narration: 丸めて収納できるものなら、使わないときも場所を取りません。
+  tags: [トレーニングマット, 筋トレ, 選び方, shorts]
+  products:
+    - {name: トレーニングマット（人気）, comment: レビューの多い人気商品, search: トレーニングマット 人気}
+    - {name: 厚手のヨガマット, comment: ひざにやさしい, search: ヨガマット 厚手 10mm}
+    - {name: ストレッチポール, comment: 体をほぐすのに, search: ストレッチポール 人気}
+
+- title: ホットアイマスクの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "😌"
+  youtube_title: "【PR】ホットアイマスクの選び方 3つのポイント #shorts"
+  hook: 目が疲れたときのリラックスに。ホットアイマスクの選び方です。
+  hook_text: "ホット\nアイマスクの\n選び方"
+  points:
+    - text: 使い捨てか充電式か
+      narration: 使い捨てタイプは手軽で旅行にも便利。充電式はくり返し使えます。
+    - text: 温度を調節できるか
+      narration: 温度を調節できるものなら、その日の気分で心地よい温かさにできます。
+    - text: 寝る前に使う
+      narration: 寝る前に目もとを温めると、リラックスして眠りに入りやすいと言われています。
+  tags: [ホットアイマスク, 目の疲れ, 選び方, shorts]
+  products:
+    - {name: 使い捨てホットアイマスク, comment: 手軽で旅行にも, search: ホットアイマスク 使い捨て}
+    - {name: 充電式ホットアイマスク, comment: くり返し使える, search: ホットアイマスク 充電式}
+    - {name: 目もとマッサージャー, comment: じっくりリラックス, search: アイウォーマー 人気}
+
+- title: 初心者向け観葉植物の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🪴"
+  youtube_title: "【PR】初心者向け 観葉植物の選び方 #shorts"
+  hook: はじめて観葉植物を買うなら、ここをチェック。
+  hook_text: "初心者向け\n観葉植物の\n選び方"
+  points:
+    - text: 育てやすい種類から
+      narration: ポトスやサンスベリアは、丈夫で育てやすいと言われ、初心者にも人気です。
+    - text: 置き場所の明るさ
+      narration: 置きたい場所の明るさに合った植物を選ぶと、元気に育ちやすくなります。
+    - text: 鉢の底に穴があるか
+      narration: 鉢の底に穴があると、余分な水が流れて根ぐされを防げます。
+  tags: [観葉植物, 植物, 選び方, shorts]
+  products:
+    - {name: ポトス, comment: 丈夫で育てやすい, search: ポトス 観葉植物}
+    - {name: サンスベリア, comment: 水やりが少なくてすむ, search: サンスベリア 観葉植物}
+    - {name: おしゃれな植木鉢, comment: 部屋の雰囲気が変わる, search: 植木鉢 おしゃれ 穴あり}
+
+- title: 急須の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🍵"
+  youtube_title: "【PR】急須の選び方 3つのポイント #shorts"
+  hook: 茶葉から淹れるお茶はおいしさが違います。急須の選び方です。
+  hook_text: "急須の\n選び方"
+  points:
+    - text: 茶こしのタイプ
+      narration: 深蒸し茶のような細かい茶葉には、目の細かい網の茶こしが向いています。
+    - text: 容量で選ぶ
+      narration: 1人で使うなら小さめ、家族で使うなら大きめと、人数に合わせて選びましょう。
+    - text: 素材で選ぶ
+      narration: 陶器や磁器、ガラスなど素材で見た目や手入れのしやすさが変わります。
+  tags: [急須, お茶, 選び方, shorts]
+  products:
+    - {name: 急須（人気）, comment: レビューの多い人気商品, search: 急須 人気}
+    - {name: 深蒸し茶用の急須, comment: 細かい茶葉に, search: 急須 深蒸し茶}
+    - {name: 緑茶の茶葉, comment: 飲み比べも楽しい, search: 緑茶 茶葉 人気}
+
+- title: 浄水ポットの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🚰"
+  youtube_title: "【PR】浄水ポットの選び方 3つのポイント #shorts"
+  hook: 水道水をおいしく飲みたい人へ。浄水ポットの選び方です。
+  hook_text: "浄水ポットの\n選び方"
+  points:
+    - text: カートリッジの交換時期
+      narration: カートリッジは定期的に交換が必要なので、交換の目安と値段を確認しましょう。
+    - text: 取りのぞける物質
+      narration: 商品によって取りのぞける物質が違うので、パッケージの表示を確認しましょう。
+    - text: 冷蔵庫に入るサイズ
+      narration: 冷蔵庫のドアポケットに入るサイズだと、冷たくておいしい水がいつでも飲めます。
+  tags: [浄水ポット, 水分補給, 選び方, shorts]
+  products:
+    - {name: 浄水ポット（人気）, comment: レビューの多い人気商品, search: 浄水ポット 人気}
+    - {name: 浄水ポットの交換カートリッジ, comment: 定期的な交換に, search: 浄水ポット カートリッジ}
+    - {name: 蛇口直結型浄水器, comment: 料理にもたっぷり使える, search: 浄水器 蛇口直結}
+
+- title: 温湿度計の選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🌡️"
+  youtube_title: "【PR】温湿度計の選び方 3つのポイント #shorts"
+  hook: 部屋の乾燥や暑さ寒さを見える化しよう。温湿度計の選び方です。
+  hook_text: "温湿度計の\n選び方"
+  points:
+    - text: 見やすさで選ぶ
+      narration: 数字が大きくて見やすいデジタル表示のものは、離れた場所からでも確認できます。
+    - text: 置き場所に注意
+      narration: エアコンの風や直射日光が当たる場所をさけると、正しく測りやすくなります。
+    - text: 便利な機能
+      narration: 時計つきや、快適さを顔マークで教えてくれるものなど、便利な機能もあります。
+  tags: [温湿度計, 乾燥, 加湿, 選び方, shorts]
+  products:
+    - {name: デジタル温湿度計, comment: 数字が見やすい, search: 温湿度計 デジタル 人気}
+    - {name: 時計つき温湿度計, comment: 時計としても使える, search: 温湿度計 時計付き}
+    - {name: 加湿器（人気）, comment: 湿度が低いときに, search: 加湿器 人気}
+
+- title: 米びつの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🍚"
+  youtube_title: "【PR】米びつの選び方 3つのポイント #shorts"
+  hook: お米をおいしく保存するなら、米びつ選びも大事です。
+  hook_text: "米びつの\n選び方"
+  points:
+    - text: 冷蔵庫に入るサイズ
+      narration: お米は涼しい場所での保存がおすすめなので、冷蔵庫の野菜室に入るサイズが便利です。
+    - text: しっかり密閉できるか
+      narration: ふたがしっかり閉まるものは、湿気や虫からお米を守ってくれます。
+    - text: 計量できると便利
+      narration: 一合ずつ量れる機能がついていると、計量カップがいらずラクです。
+  tags: [米びつ, お米, 選び方, shorts]
+  products:
+    - {name: 冷蔵庫用の米びつ, comment: 野菜室で保存, search: 米びつ 冷蔵庫 人気}
+    - {name: 計量できる米びつ, comment: 一合ずつ出せる, search: 米びつ 計量}
+    - {name: お米（5kg）, comment: 重いお米は通販がラク, search: コシヒカリ 5kg}
+
+- title: はちみつの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "🍯"
+  youtube_title: "【PR】はちみつの選び方 3つのポイント #shorts"
+  hook: はちみつは選び方で味も楽しみ方も変わります。
+  hook_text: "はちみつの\n選び方"
+  points:
+    - text: 「純粋はちみつ」の表示
+      narration: 純粋はちみつと表示されたものは、砂糖などを加えていないはちみつです。
+    - text: 花の種類で味が違う
+      narration: アカシアはくせが少なく、そばはこくがあるなど、花の種類で味が変わります。
+    - text: 1歳未満にはあげない
+      narration: はちみつは、1歳未満の赤ちゃんには食べさせてはいけないので注意しましょう。
+  tags: [はちみつ, 選び方, shorts]
+  products:
+    - {name: 国産はちみつ, comment: 花の種類で味が違う, search: 国産 はちみつ 純粋}
+    - {name: アカシアはちみつ, comment: くせが少なく食べやすい, search: アカシア はちみつ}
+    - {name: はちみつの食べ比べセット, comment: いろいろ試せる, search: はちみつ 食べ比べ セット}
+
+- title: ブックライトの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "📖"
+  youtube_title: "【PR】ブックライトの選び方 3つのポイント #shorts"
+  hook: 寝る前の読書に便利なブックライト。選び方のポイントです。
+  hook_text: "ブックライトの\n選び方"
+  points:
+    - text: 明るさを調節できるか
+      narration: 明るさを調節できると、まわりの人の眠りもじゃましません。
+    - text: 光の色
+      narration: 寝る前は、白い光よりオレンジっぽい暖かい色の光がリラックスしやすいと言われています。
+    - text: 充電式が便利
+      narration: 充電式なら電池を買う手間がなく、くり返し使えます。
+  tags: [ブックライト, 読書, 選び方, shorts]
+  products:
+    - {name: クリップ式ブックライト, comment: 本にはさんで使える, search: ブックライト クリップ 充電式}
+    - {name: 電子書籍リーダー（楽天Kobo）, comment: 画面が光るので暗くても読める, search: 楽天kobo 電子書籍リーダー}
+    - {name: ネックライト, comment: 首にかけて両手が使える, search: ネックライト 読書}
+
+- title: 部屋干しグッズの選び方
+  header: 【PR】買う前にチェック
+  label: 選び方
+  outro_text: "おすすめは\nプロフィールの\nリンクから！"
+  emoji: "👕"
+  youtube_title: "【PR】部屋干しを早く乾かすグッズ #shorts"
+  hook: 冬や雨の日の部屋干し、早く乾かすコツとグッズです。
+  hook_text: "部屋干しを\n早く乾かす"
+  points:
+    - text: 風を当てる
+      narration: サーキュレーターで洗濯物に風を当てると、早く乾きやすくなります。
+    - text: 間かくをあける
+      narration: 洗濯物どうしの間をあけて干すと、空気が通って乾きやすくなります。
+    - text: 部屋干し用の洗剤
+      narration: 部屋干し用の洗剤を使うと、いやなにおいをおさえやすくなります。
+  tags: [部屋干し, 洗濯, 選び方, shorts]
+  products:
+    - {name: サーキュレーター, comment: 洗濯物に風を当てて早く乾かす, search: サーキュレーター 人気}
+    - {name: 部屋干し用洗剤, comment: においをおさえる, search: 部屋干し 洗剤 人気}
+    - {name: 室内物干し, comment: たくさん干せる, search: 室内物干し スタンド}
+
+# ===== 雑学ネタ =====
+
 - title: ふるさと納税の知らないと損する話
   hook: ふるさと納税、まだの人は要注意。知らないと損する話を3つ紹介します。
   hook_text: "ふるさと納税\n知らないと損"

@@ -264,6 +264,15 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
     pinned = [t for t in topics if md in [str(x) for x in t.get("dates", [])]] if index is None and slot == 0 else []
     if pinned:
         i, t = topics.index(pinned[0]), pinned[0]
+    elif index is None and cfg.get("product_ratio") and any(x.get("products") for x in topics):
+        # 商品紹介（products: のあるネタ）を product_ratio 日、雑学を 1 日の割合で出す
+        ratio = int(cfg["product_ratio"])
+        day = date.toordinal() * per_day + slot
+        cyc, pos = divmod(day, ratio + 1)
+        prods = [x for x in topics if x.get("products")]
+        others = [x for x in topics if not x.get("products")] or prods
+        t = prods[(cyc * ratio + pos) % len(prods)] if pos < ratio else others[cyc % len(others)]
+        i = topics.index(t)
     else:
         i = index if index is not None else date.toordinal() * per_day + slot
         i %= len(topics)
@@ -272,7 +281,7 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
     title = t["title"]
     main_em = t.get("emoji") or illust.pick_one(title, fallback="💡")
     hook = t.get("hook", f"{title}、知ってた？")
-    scenes = [Scene(kind="hook", label="雑学", text=t.get("hook_text", title), emoji=main_em,
+    scenes = [Scene(kind="hook", label=t.get("label", "雑学"), text=t.get("hook_text", title), emoji=main_em,
                     narration=_sentence(hook))]
     point_ems = []
     for n, p in enumerate(t["points"], 1):
@@ -295,7 +304,8 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
     return VideoPlan(header=t.get("header", "知ってた？"), subheader=title, scenes=scenes,
                      title=t.get("youtube_title", f"【雑学】{title} #shorts"),
                      description=desc, tags=tags, seed=date.toordinal() * per_day + slot,
-                     emojis=list(dict.fromkeys([main_em] + point_ems)))
+                     emojis=list(dict.fromkeys([main_em] + point_ems)),
+                     products=list(t.get("products") or []))
 
 
 def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None,

@@ -34,3 +34,4 @@ class VideoPlan:
     seed: int = 0                # 配色などのランダム要素を固定するため
     emojis: list[str] = field(default_factory=list)  # 背景に散らすイラスト
     max_seconds: float | None = None  # この動画の最大秒数（None なら config の max_seconds）
+    products: list[dict] = field(default_factory=list)  # 紹介する商品（affiliate 用。topics.yaml の products:）
