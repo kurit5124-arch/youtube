@@ -29,6 +29,8 @@ def main() -> int:
     ap.add_argument("--date", help="YYYY-MM-DD（既定: 日本時間の今日）")
     ap.add_argument("--topic-index", type=int, help="topics.yaml の何番目を使うか（0始まり）")
     ap.add_argument("--topics-file", help="topics.yaml の代わりに使うネタ帳（例: discussions.yaml）")
+    ap.add_argument("--story-file", help="イラスト付きストーリー動画の台本（例: stories.yaml）")
+    ap.add_argument("--story-index", type=int, default=0, help="--story-file の何番目を使うか（0始まり）")
     ap.add_argument("--upload", action="store_true", help="YouTube にアップロードする")
     ap.add_argument("--allow-silent", action="store_true", help="音声合成できないとき無音で続行（動作確認用）")
     ap.add_argument("--out", default="output", help="出力フォルダ")
@@ -43,6 +45,14 @@ def main() -> int:
     if args.wikitext_file:
         plan = sources.plan_today(date, cfg, Path(args.wikitext_file).read_text(encoding="utf-8"))
         source = "today"
+    elif args.story_file:
+        from shorts import story
+        source = "story"
+        st = story.load(ROOT / args.story_file)[args.story_index]
+        if st.get("voice"):
+            cfg = {**cfg, "voice": {**cfg.get("voice", {}), **st["voice"]}}
+        cfg = {**cfg, "max_seconds": st.get("max_seconds", 59)}
+        plan = story.plan_story(st, date)
     elif args.topics_file:
         source = "topics"
         tf = ROOT / args.topics_file

@@ -74,6 +74,11 @@ def emoji_image(text: str, height: int) -> Image.Image | None:
 NO_START = set("、。，．・：；？！ー」』）】〕〉》ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ…")
 
 
+# 途中で改行したくない数字のかたまり（例: 9500万円 / 2013年 / 62歳）
+NUM = set("0123456789０１２３４５６７８９,.，．")
+NUM_TAIL = set("万億千円年月日歳人件%％")
+
+
 def wrap(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
     lines: list[str] = []
     for para in text.split("\n"):
@@ -81,9 +86,18 @@ def wrap(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
         for ch in para:
             if font.getlength(line + ch) <= max_w or not line or ch in NO_START:
                 line += ch
-            else:
-                lines.append(line)
-                line = ch
+                continue
+            # 数字の途中で切れるときは、数字のかたまりごと次の行へ送る
+            if line and (ch in NUM or ch in NUM_TAIL) and line[-1] in NUM:
+                k = len(line)
+                while k > 0 and (line[k - 1] in NUM or line[k - 1] in NUM_TAIL):
+                    k -= 1
+                if 0 < k:
+                    lines.append(line[:k])
+                    line = line[k:] + ch
+                    continue
+            lines.append(line)
+            line = ch
         lines.append(line)
     return lines
 

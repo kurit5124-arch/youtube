@@ -18,6 +18,7 @@ class Scene:
     reveal: bool = False         # 正解発表シーンか
     countdown: int | None = None # カウントダウン表示（3,2,1）
     emoji: str = ""              # 場面のイメージ画像として大きく描く絵文字（例: 😴🔊🥩）
+    art: dict = field(default_factory=dict)  # イラストの指定（背景・登場人物・表情。shorts/illust.py）
     sub: str = ""                # 補足（ドキュメンタリー: 場所や話し手）
     badge: str = ""              # reveal のとき正解の選択肢の右に出す文字（既定: 正解）
 

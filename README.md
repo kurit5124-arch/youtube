@@ -133,6 +133,20 @@ note には公式の投稿 API が無いので、投稿は手作業です。
   画面右下にナレーターとして出て、声に合わせて口パクします（詳しくは `assets/character/README.md`）。
   配布元の利用規約を確認し、必要なクレジットを `config.yaml` の `character.credit` に書いてください
 
+## イラスト付きストーリー動画（実話・解説）
+
+`stories.yaml` に台本を書くと、**コードで描いたイラスト**（背景＋表情のある人物）のアニメ風動画になります。
+
+```bash
+python main.py --story-file stories.yaml --story-index 0
+```
+
+- 背景: 道路 / 法廷 / 病室 / ネットの声 / 部屋
+- 人物: 子ども・女性・母親・高齢の女性・男性・裁判官。表情は 怒り / 悲しみ / 驚き / 不安 / 真剣 / 笑顔
+- しゃべっている人は声に合わせて口が動き、💢💦❗ などの効果も付けられます
+- 1本目は「納得できない判決 実話ファイル #1（小学生の自転車事故で賠償9500万円）」
+- 実話は報道された事実だけを書き、当事者の名前は出さないでください（`stories.yaml` 冒頭の方針を参照）
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -156,7 +170,9 @@ shorts/sources.py           ネタ集め・台本作り
 shorts/wikitext.py          Wikipedia の文章の整形
 shorts/tts.py               音声合成（VOICEVOX / Edge TTS）
 shorts/render.py            スライド描画と動画化（Pillow + ffmpeg）
-shorts/anime.py             アニメ風の動く画面（みんなの裁判）
+shorts/anime.py             アニメ風の動く画面（みんなの裁判・ストーリー動画）
+shorts/illust.py            コードで描くイラスト（背景と表情のある人物）
+shorts/story.py             ストーリー動画の台本（stories.yaml）
 shorts/pipeline.py          全体の流れ
 shorts/upload.py            YouTube 投稿・コメントの読み書き
 shorts/saiban.py            みんなの裁判（事件づくり・投票集計・台本）

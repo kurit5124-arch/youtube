@@ -1,0 +1,113 @@
+# イラスト付きストーリー動画の台本（実話・解説系）
+#   python main.py --story-file stories.yaml --story-index 0
+#
+# 方針
+# - 報道された事実だけを書く。確信の持てない数字や名前は書かない（当事者の名前は出さない）
+# - 判決への賛否は同じ重さで紹介し、最後は視聴者に問う
+# - 説明文に「報道をもとにした要約」「当事者への誹謗中傷禁止」を必ず入れる
+#
+# 伸びているショートの型を当てはめる
+#   1) 最初の1秒で「数字＋疑問」  2) 3〜7秒ごとに場面を切り替える
+#   3) 表情のある人物で感情を見せる  4) 賛否両論でコメントを誘う
+#   5) シリーズ名と番号で「次も見たい」を作る  6) 最後の一言が最初につながる（ループ）
+#
+# 場面（scenes）の書き方
+#   label: 小見出し / text: 字幕 / narration: 読み上げ
+#   art:
+#     bg: street | courtroom | hospital | net | home
+#     cast: [{who: child|woman|mother|elder_woman|man|man2|judge,
+#             expr: neutral|happy|angry|sad|shock|worried|serious,
+#             x: 0〜1（横位置）, scale: 大きさ, flip: 左右反転, bike: 自転車, fx: 効果の絵文字(💢💦❗❓)}]
+#     speaker: しゃべる人の番号（口が動く）/ big: 大きく出す言葉 / shake: 揺らす
+#   選択肢の場面: choices: [Aの言葉, Bの言葉]
+
+- title: 小学生の自転車事故で賠償9500万円
+  header: 納得できない判決
+  subheader: "実話ファイル #1"
+  youtube_title: 【実話】小学生の自転車事故で賠償9500万円…この判決、納得できる？ #shorts
+  bgm: assets/bgm_dark/01_serious_ambient.mp3
+  category_id: 27
+  scenes:
+    - label: 実話
+      text: 小学生の自転車事故で、親に賠償命令
+      narration: 小学生の自転車事故で、賠償9500万円。この判決、納得できますか？
+      art:
+        bg: street
+        big: 9500万円！？
+        big_y: 860
+        cast:
+          - {who: mother, expr: shock, x: 0.25, fx: "❗"}
+          - {who: man, expr: shock, x: 0.75, flip: true, fx: "💦"}
+    - label: 2008年 神戸市
+      text: 坂道を下っていた小学5年生の自転車が、歩いていた62歳の女性とぶつかった
+      narration: 2008年、神戸市。坂道を自転車で下っていた小学5年生の男の子が、歩いていた62歳の女性とぶつかりました。
+      art:
+        bg: street
+        shake: true
+        cast:
+          - {who: child, expr: shock, x: 0.3, scale: 0.85, bike: true, fx: "💦"}
+          - {who: elder_woman, expr: shock, x: 0.74, flip: true, fx: "❗"}
+    - label: 事故のあと
+      text: 女性は頭を強く打ち、意識が戻らない状態に
+      narration: 女性は頭を強く打ち、意識が戻らない状態になりました。
+      art:
+        bg: hospital
+        cast:
+          - {who: man2, expr: sad, x: 0.78, flip: true}
+    - label: 判決（2013年 神戸地裁）
+      text: 子どもへの指導が不十分だったとして、母親に約9500万円の支払いを命令
+      narration: 2013年、神戸地裁は、子どもへの指導が不十分だったとして、母親に約9500万円の支払いを命じました。
+      art:
+        bg: courtroom
+        speaker: 0
+        cast:
+          - {who: judge, expr: serious, x: 0.5}
+    - label: 「納得できない」という声
+      text: 子どもの事故で、親が一生かけても払えない額は重すぎる
+      narration: ネットでは、子どもの事故で、親が一生かけても払えない額は重すぎる、という声が上がりました。
+      art:
+        bg: net
+        speaker: 0
+        cast:
+          - {who: man, expr: angry, x: 0.32, fx: "💢"}
+          - {who: mother, expr: worried, x: 0.72, flip: true, fx: "💦"}
+    - label: 「当然だ」という声
+      text: 被害者の人生と、これからの介護を考えれば当然の額
+      narration: 一方で、被害者の人生と、これからの介護を考えれば当然の額だ、という意見もあります。
+      art:
+        bg: net
+        speaker: 0
+        cast:
+          - {who: woman, expr: serious, x: 0.32}
+          - {who: man2, expr: sad, x: 0.72, flip: true}
+    - label: あなたはどう思う？
+      text: この判決、納得できる？
+      choices: [納得できる, 納得できない]
+      narration: あなたはこの判決、納得できますか？Aなら納得できる、Bなら納得できない。コメントで教えてください。
+    - label: その後
+      text: この判決をきっかけに、自転車保険を義務にする自治体が増えた。あなたは入ってる？
+      narration: この判決をきっかけに、自転車保険の加入を義務にする自治体が増えました。あなたの家は、入っていますか？
+      art:
+        bg: home
+        speaker: 0
+        cast:
+          - {who: mother, expr: worried, x: 0.3, fx: "❓"}
+          - {who: child, expr: neutral, x: 0.7, scale: 0.85, flip: true}
+  tags: [納得できない判決, 実話, 裁判, 自転車事故, 自転車保険, 賠償, shorts]
+  description: |
+    小学生の自転車事故で、母親に約9500万円の賠償命令。あなたはこの判決、納得できますか？
+    コメントに「A（納得できる）」か「B（納得できない）」と、理由を書いてください。
+
+    ■ 事故（2008年・神戸市）
+    坂道を自転車で下っていた小学5年生の男の子が、歩いていた62歳の女性と衝突。女性は頭を強く打ち、意識が戻らない状態になりました。
+
+    ■ 判決（2013年・神戸地裁）
+    子どもへの指導や注意が不十分だったとして、母親に約9500万円の賠償を命じました。
+
+    ■ その後
+    この判決をきっかけに、自転車保険の加入を義務にする自治体が増えました（兵庫県が2015年に全国で初めて条例で義務化）。
+
+    ※報道をもとに要約しています。イラストはイメージです。
+    ※当事者の方への誹謗中傷はおやめください。
+
+    #納得できない判決 #実話 #裁判 #自転車保険 #shorts

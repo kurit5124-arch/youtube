@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+from . import illust
 from .models import Scene, VideoPlan
 from .render import FPS, H, W, emoji_image, wrap
 
@@ -238,6 +239,12 @@ class SceneAnimator:
         else:
             self.block = _TextBlock(text, font_path, 800, 320 if narrator else 380, start=76)
         self.type_until = max(0.6, (dur - 0.4) * 0.75)  # この秒数で全文が出る
+        self.art = scene.art or {}
+        if self.art:
+            self.bg_art, self.front_art = illust.background(self.art.get("bg", "home"), plan.seed)
+            self.cast = self.art.get("cast", [])
+            self.fx = {k: sticker(c["fx"], 120) for k, c in enumerate(self.cast) if c.get("fx")}
+            self.block = _TextBlock(scene.text.strip("「」"), font_path, 820, 300, start=70) if scene.text else None
 
     def _header(self, d):
         _outlined(d, (W // 2, 250), self.plan.header, self.f(96), fill=(255, 255, 255), width=12)
@@ -263,7 +270,79 @@ class SceneAnimator:
         _paste_scaled(img, tag, x - (1 - k) * (600 if self.role == "left" else -600 if self.role == "right" else 0),
                       500, 1.0, angle=-4 if self.role != "right" else 4)
 
+    # --- イラストの場面
+    def _illust_frame(self, i: int, env: float) -> Image.Image:
+        t = i / FPS
+        img = self.bg_art.copy()
+        talk = env * (1 if t < self.dur - 0.2 else 0)
+        speaker = self.art.get("speaker")
+        for k, c in enumerate(self.cast):
+            enter = _ease_back((t - k * 0.12) / 0.35)
+            if enter <= 0:
+                continue
+            speaking = speaker == k and talk > 0.25
+            blink = (t + k * 1.3) % 3.4 < 0.12
+            im = illust.person(c.get("who", "man"), c.get("expr", "neutral"), speaking, blink, bool(c.get("bike")))
+            if c.get("flip"):
+                im = im.transpose(Image.FLIP_LEFT_RIGHT)
+            sc = float(c.get("scale", 1.0)) * enter
+            hop = (talk * 18 if speaker == k else 0) + illust.bob(t, k)
+            jitter = random.uniform(-10, 10) if c.get("expr") == "shock" and t < 0.5 else 0
+            cx = c.get("x", 0.5) * W + jitter
+            feet = c.get("y", illust.FLOOR_Y)
+            w, h = int(im.width * sc), int(im.height * sc)
+            if w < 2 or h < 2:
+                continue
+            img.alpha_composite(illust.shadow(int(w * 0.7)), (int(cx - w * 0.35), int(feet - 30)))
+            img.alpha_composite(im.resize((w, h), Image.BILINEAR), (int(cx - w / 2), int(feet - h - hop)))
+            fx = self.fx.get(k)
+            if fx is not None:
+                _paste_scaled(img, fx, cx + w * 0.38, feet - h - hop + 60 + math.sin(t * 6) * 8, enter * 0.9)
+        if self.front_art is not None:
+            img.alpha_composite(self.front_art)
+        d = ImageDraw.Draw(img)
+        self._header(d)
+        self._label(img, t)
+        if self.block:  # 字幕（上の方の吹き出し。1 文字ずつ出る）
+            b = self.block
+            top = 560
+            k = _ease_back((t - 0.05) / 0.3)
+            if k > 0:
+                layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+                ld = ImageDraw.Draw(layer)
+                box = [70, top, W - 70, top + b.height + 80]
+                tail = None
+                if speaker is not None and speaker < len(self.cast):
+                    tail = (self.cast[speaker].get("x", 0.5) * W, box[3] + 90)
+                _bubble(ld, box, tail)
+                shown = int(b.total * min(1.0, max(0.0, (t - 0.15) / self.type_until)))
+                b.draw(ld, W / 2, top + 40, shown)
+                if abs(k - 1) < 1e-3:
+                    img.alpha_composite(layer)
+                else:
+                    ccx, ccy = W / 2, (box[1] + box[3]) / 2
+                    _paste_scaled(img, layer, ccx * (1 - k) + W * k / 2, ccy * (1 - k) + H * k / 2, k)
+        big = self.art.get("big")
+        if big:  # 大きな数字・言葉をドンと出す
+            k = _ease_out((t - 0.25) / 0.25)
+            if k > 0:
+                f = self.f(170)
+                while f.getlength(big) > 1000 and f.size > 80:
+                    f = self.f(f.size - 10)
+                layer = Image.new("RGBA", (W, 320), (0, 0, 0, 0))
+                _outlined(ImageDraw.Draw(layer), (W // 2, 160), big, f, fill=tuple(self.art.get("big_color", (255, 70, 70))),
+                          stroke=(255, 255, 255), width=16)
+                _paste_scaled(img, layer, W / 2, self.art.get("big_y", 1060), 2.2 - 1.2 * k, angle=-3)
+        out = img.convert("RGB")
+        if (big and 0.25 < t < 0.7) or self.art.get("shake") and t < 0.45:
+            amp = 16 * (1 - min(1, (t % 0.45) / 0.45))
+            out = out.transform(out.size, Image.AFFINE, (1, 0, random.uniform(-amp, amp), 0, 1, random.uniform(-amp, amp)),
+                                fillcolor=(0, 0, 0))
+        return out
+
     def frame(self, i: int, env: float) -> Image.Image:
+        if self.art:
+            return self._illust_frame(i, env)
         t = i / FPS
         s = self.s
         bg = self.bgs[(i // 3) % 3].convert("RGBA")  # 線が少しずつ揺れる（アニメの「ゆらぎ」）
