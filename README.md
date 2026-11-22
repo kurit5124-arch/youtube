@@ -80,16 +80,19 @@ Google の審査（API 監査）を通していないプロジェクトから AP
 
 ```bash
 python make_music_video.py                  # 作曲 → イラスト → 縦型MV（約1分・ショート向け）
+python make_music_video.py --landscape      # 横型 1920x1080・約3分（通常動画向け）
+python make_music_video.py --style synthwave  # ゆったりめのシンセウェーブにする
 python make_music_video.py --seed 3         # 別の曲・別の景色
-python make_music_video.py --landscape      # 横型 1920x1080
 python make_music_video.py --title "MIDNIGHT RUN"
 python make_music_video.py --preview 8      # 最初の8秒だけ（確認用）
 ```
 
 `output/` に mp4・mp3（曲だけ）・サムネイル jpg・タイトル/説明文の json ができます。
 
-- **曲**：128 BPM・Aマイナーのシンセウェーブ。イントロ → ビルド（ライザー・スネアロール）→ ドロップ → ブレイク → ドロップ2 の構成。
-  キックに合わせてベースが波打つ「サイドチェイン」入り。`--seed` を変えるとコード進行とメロディが変わります
+- **曲**：既定は 140 BPM の激しいダークシンセ（`--style hard`）。16分で転がる歪んだベース、裏拍のコードの刻み、
+  ハネ気味のハイハット、ビルドでだんだん細かくなるキックとスネアロール、ドロップ直前の一瞬の無音。
+  `--style synthwave` で 128 BPM のゆったりめのシンセウェーブになります。
+  横型は約3分（ドロップ3回＋ブリッジ）、縦型は約1分。`--seed` を変えるとコード進行とメロディが変わります
 - **イラスト**：夕日・ワイヤーフレームの山・どこまでも続くグリッド・テールランプが光る車
 - **音への反応**：低音で太陽が脈打つ／キックで画面が寄る・車が弾む・テールランプが光る／
   太陽のまわりのスペクトラムが音域ごとに伸びる／ドロップの瞬間にフラッシュ・揺れ・色ずれ／

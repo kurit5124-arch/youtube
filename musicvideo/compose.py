@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import wave
 from dataclasses import dataclass, field
@@ -220,13 +221,24 @@ TRIAD = {"m": [0, 3, 7], "M": [0, 4, 7]}
 SCALE = [57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81]  # A natural minor
 
 
-def _melody(rng, prog) -> list[tuple[float, float, int]]:
-    """2小節×4のフック。(拍位置, 長さ[拍], MIDI) のリスト（8小節分）"""
-    rhythms = [
+RHYTHMS = {
+    "synthwave": [
         [(0, 1.5), (1.5, 0.5), (2, 1), (3, 0.5), (3.5, 0.5)],
         [(0, 0.75), (0.75, 0.75), (1.5, 1), (2.5, 0.5), (3, 1)],
         [(0, 1), (1, 0.5), (1.5, 1.5), (3, 1)],
-    ]
+    ],
+    # 16分の裏を突くシンコペーション多め（ノリ重視）
+    "hard": [
+        [(0, 0.75), (0.75, 0.75), (1.5, 0.5), (2, 0.5), (2.5, 0.75), (3.25, 0.75)],
+        [(0, 0.5), (0.5, 0.25), (0.75, 0.75), (1.5, 0.5), (2, 1), (3, 0.5), (3.5, 0.5)],
+        [(0, 0.75), (0.75, 0.25), (1, 0.5), (1.5, 1), (2.5, 0.5), (3, 0.75), (3.75, 0.25)],
+    ],
+}
+
+
+def _melody(rng, prog, style="synthwave") -> list[tuple[float, float, int]]:
+    """2小節×4のフック。(拍位置, 長さ[拍], MIDI) のリスト（8小節分）"""
+    rhythms = RHYTHMS[style]
     out = []
     motif = None
     for bar in range(8):
@@ -258,13 +270,20 @@ def tom(rng, f0: float) -> np.ndarray:
     return np.tanh(s * 1.8) * 0.6 + rng.standard_normal(n) * np.exp(-t * 60) * 0.1
 
 
-def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON DRIVE",
-            length: str = "short") -> Path:
-    """length="short" で約1分、"long" で約3分の曲を作る"""
+STYLES = ("hard", "synthwave")
+DEFAULT_BPM = {"hard": 140, "synthwave": 128}
+
+
+def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "NEON DRIVE",
+            length: str = "short", style: str = "hard") -> Path:
+    """length="short" で約1分、"long" で約3分の曲を作る。
+    style="hard" は速くて激しいダークシンセ、"synthwave" はゆったりめのシンセウェーブ。"""
     rng = np.random.default_rng(seed)
+    hard = style == "hard"
+    bpm = bpm or DEFAULT_BPM[style]
     sections = SECTIONS_LONG if length == "long" else SECTIONS_SHORT
     progs = [PROGRESSIONS[seed % len(PROGRESSIONS)], BRIDGE]
-    melodies = [_melody(rng, progs[0]), _melody(rng, progs[0]), _melody(rng, progs[1])]
+    melodies = [_melody(rng, progs[0], style), _melody(rng, progs[0], style), _melody(rng, progs[1], style)]
     beat = 60 / bpm
     bar = beat * 4
     total_bars = sum(s.bars for s in sections)
@@ -289,13 +308,20 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
         kick_env[i:i + len(e)] = np.maximum(kick_env[i:i + len(e)], e)
 
     k_s, sn_s, cl_s = kick(rng), snare(rng), clap(rng)
+    if hard:  # 歪ませて硬く・太く
+        k_s = np.tanh(k_s * 2.5) * 0.95
+        layered = sn_s.copy()
+        layered[: len(cl_s)] += 0.6 * cl_s[: len(sn_s)]
+        sn_s = np.tanh(layered * 2.0) * 0.8
     k_f = lowpass(k_s, 250)
     hats = [hat(rng) for _ in range(4)]
     ohat = hat(rng, True)
     toms = [tom(rng, f) for f in (190, 150, 115, 90)]
 
     bar_i = 0
+    timeline = []
     for sec in sections:
+        timeline.append({"name": sec.name, "start": round(bar_i * bar, 3)})
         prog = progs[sec.prog]
         melody = melodies[sec.mel]
         for b in range(sec.bars):
@@ -339,7 +365,21 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                         put("music", lowpass(h, 6000), t0 + k * d + d, 0.04)
 
             # ベース（8分刻みのオクターブ）＋サブベース
-            if "bass" in L or "bass_soft" in L:
+            if hard and "bass" in L:
+                # ローリングベース：キックの拍を空けて 16分の 2・3・4 つ目で刻む
+                d = beat / 4
+                for q in range(4):
+                    for k in (1, 2, 3):
+                        m = root - 12
+                        n = int(d * 0.92 * SR)
+                        raw = saw(mtof(m), n, 0.1) + saw(mtof(m + 0.12), n, 0.6) + 0.7 * square(mtof(m - 12), n)
+                        tt = np.arange(n) / SR
+                        fenv = np.exp(-tt * 28)
+                        dark, bright = lowpass(raw, 350), lowpass(raw, 3800, reso=1.0)
+                        s = dark + (bright - dark) * fenv
+                        s = np.tanh(s * 3.0) * adsr(n, 0.002, 0.05, 0.8, 0.01)
+                        put("bass", s, t0 + q * beat + k * d, 0.3 if k != 3 else 0.36)
+            elif "bass" in L or "bass_soft" in L:
                 for k in range(8):
                     m = root - 12 + (12 if k % 2 else 0)
                     d = beat / 2
@@ -364,11 +404,30 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                     n = int(ln * beat * SR)
                     s = supersaw(m + oct_, n / SR, voices=7, detune=0.22, rng=rng)
                     s = s * (1 + 0.003 * np.sin(2 * np.pi * 5.5 * np.arange(n) / SR) * np.linspace(0, 1, n))
-                    cut = 1400 if "lead_soft" in L else 5200
-                    s = lowpass(s, cut, reso=0.6) * adsr(n, 0.01, 0.2, 0.75, 0.08)
+                    cut = 1400 if "lead_soft" in L else (7000 if hard else 5200)
+                    if hard and "lead_soft" not in L:
+                        s = s + 0.6 * saw(mtof(m + oct_ - 12), n)  # 1オクターブ下を重ねて太く
+                        s = np.tanh(s * 1.6)
+                    s = lowpass(s, cut, reso=0.6) * adsr(n, 0.005, 0.15, 0.75, 0.05)
                     put("lead", s, t0 + lp * beat, 0.1 if "lead_soft" in L else 0.16)
 
+            # コードの刻み（裏拍のスタブ）
+            if hard and "kick" in L:
+                for pos16 in (2, 6, 10, 13):
+                    n = int(beat / 4 * 1.6 * SR)
+                    s = np.zeros(n)
+                    for m in tones + [root + 12]:
+                        s += supersaw(m + 12, n / SR, voices=5, detune=0.2, rng=rng)
+                    s = lowpass(s, 4500, reso=0.5) * adsr(n, 0.002, 0.09, 0.15, 0.02)
+                    put("music", s, t0 + pos16 * beat / 4, 0.09)
+                    put("fx", s, t0 + pos16 * beat / 4 + beat * 0.75, 0.025)
+
             # ドラム
+            if hard and sec.name.startswith("build") and b >= sec.bars - 4:
+                # ビルドの最後はキックがだんだん細かくなる
+                per = [4, 4, 8, 16][b - (sec.bars - 4)]
+                for k in range(per):
+                    add_kick(t0 + k * bar / per, 0.25 + 0.25 * (b - sec.bars + 4) / 3, k_f if per > 8 else None)
             if "kick" in L:
                 for q in range(4):
                     add_kick(t0 + q * beat)
@@ -394,8 +453,12 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                         continue
                     if fill_bar and e8 >= 12:
                         continue
-                    vel = 1.0 if e8 % 4 == 2 else 0.55
-                    put("drums", hats[e8 % 4], t0 + e8 * beat / 4, vel)
+                    if hard:
+                        vel = [0.45, 0.3, 1.0, 0.55][e8 % 4]
+                        sw = beat / 4 * 0.12 if e8 % 2 else 0  # 少しだけハネる
+                    else:
+                        vel, sw = (1.0 if e8 % 4 == 2 else 0.55), 0
+                    put("drums", hats[e8 % 4], t0 + e8 * beat / 4 + sw, vel)
             if "ohat" in L:
                 for q in range(4):
                     put("drums", ohat, t0 + q * beat + beat / 2, 0.8)
@@ -406,7 +469,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
                 steps = [4, 8, 16, 16][b - (sec.bars - 4)]
                 for k in range(steps):
                     p = (b - (sec.bars - 4) + k / steps) / 4
-                    put("drums", sn_s, t0 + k * bar / steps, 0.2 + 0.6 * p)
+                    put("drums", sn_s, t0 + k * bar / steps, (0.15 + 0.45 * p) if hard else (0.2 + 0.6 * p))
             if "crash" in L and b % 8 == 0:
                 put("fx", crash(rng), t0, 1.0)
                 if b == 0:
@@ -482,4 +545,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float = 128, title: str = "NEON 
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-b:a", "256k",
                         "-metadata", f"title={title}", str(out_path)], check=True)
         wav.unlink()
+    # 映像側がドロップの瞬間を正確に知れるよう、セクションの開始時刻を保存
+    out_path.with_suffix(".sections.json").write_text(
+        json.dumps({"bpm": bpm, "style": style, "sections": timeline}, ensure_ascii=False, indent=1), encoding="utf-8")
     return out_path

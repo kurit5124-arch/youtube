@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -111,12 +112,19 @@ def analyze(path: Path, fps: int = 30, bands: int = 48) -> Features:
     slow = _smooth(_norm(rms, 95), 0.01, 0.01)
     jump = energy - np.roll(slow, int(fps * 0.5))
     jump[: int(fps * 0.5)] = 0
+    # 自動作曲した曲なら、保存されたセクション情報からドロップの瞬間を正確に取る
+    side = Path(path).with_suffix(".sections.json")
+    hits = set()
+    if side.exists():
+        for sec in json.loads(side.read_text(encoding="utf-8"))["sections"]:
+            if sec["name"].startswith(("drop", "final")):
+                hits.add(int(round(sec["start"] * fps)))
     drop = np.zeros(n)
     v = 0.0
     last = -fps * 10
     for i in range(n):
         v *= 0.93
-        if jump[i] > 0.25 and i - last > fps * 8:
+        if (i in hits) if hits else (jump[i] > 0.25 and i - last > fps * 8):
             v = 1.0
             last = i
         drop[i] = v

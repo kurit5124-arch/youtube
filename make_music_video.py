@@ -25,10 +25,12 @@ from musicvideo.render import render_video
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--title", default="NEON DRIVE", help="画面に出す曲名")
-    ap.add_argument("--subtitle", default="SYNTHWAVE  ·  ORIGINAL TRACK")
+    ap.add_argument("--style", choices=["hard", "synthwave"], default="hard",
+                    help="曲の雰囲気 hard=速くて激しいダークシンセ（既定） / synthwave=ゆったりめ")
+    ap.add_argument("--title", help="画面に出す曲名（既定: hard は OVERDRIVE、synthwave は NEON DRIVE）")
+    ap.add_argument("--subtitle", help="曲名の下の小さい文字")
     ap.add_argument("--seed", type=int, default=7, help="作曲と景色のパターン（数字を変えると別の曲に）")
-    ap.add_argument("--bpm", type=float, default=128)
+    ap.add_argument("--bpm", type=float, help="テンポ（既定: hard=140, synthwave=128）")
     ap.add_argument("--length", choices=["short", "long"],
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
@@ -39,6 +41,9 @@ def main() -> int:
     ap.add_argument("--workers", type=int, help="並列数（既定: CPU 数）")
     ap.add_argument("--out", type=Path, default=Path("output"), help="出力フォルダ")
     args = ap.parse_args()
+    genre = "DARKSYNTH" if args.style == "hard" else "SYNTHWAVE"
+    args.title = args.title or ("OVERDRIVE" if args.style == "hard" else "NEON DRIVE")
+    args.subtitle = args.subtitle or f"{genre}  ·  ORIGINAL TRACK"
 
     W, H = (1920, 1080) if args.landscape else (1080, 1920)
     slug = "".join(c if c.isalnum() else "_" for c in args.title.lower()).strip("_") or "music_video"
@@ -51,8 +56,8 @@ def main() -> int:
     else:
         audio = args.out / f"{slug}{'_landscape' if args.landscape else ''}.mp3"
         length = args.length or ("long" if args.landscape else "short")
-        print(f"[1/3] 作曲中…（{args.bpm:g} BPM, seed={args.seed}, {length}）")
-        compose(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length)
+        print(f"[1/3] 作曲中…（{args.style}, seed={args.seed}, {length}）")
+        compose(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length, style=args.style)
         print(f"      → {audio}")
 
     print("[2/3] 音を解析中…")
@@ -70,10 +75,10 @@ def main() -> int:
                  workers=args.workers, thumbnail=thumb)
 
     meta = {
-        "title": f"{args.title} | Synthwave Original Track",
+        "title": f"{args.title} | {genre.title()} Original Track",
         "description": (
-            f"{args.title} — プログラムで自動作曲したオリジナルのシンセウェーブ曲と、"
-            "音に合わせて動くネオンのイラスト。\n\n#synthwave #retrowave"
+            f"{args.title} — プログラムで自動作曲したオリジナルの{genre.title()}曲と、"
+            "音に合わせて動くネオンのイラスト。\n\n#synthwave #darksynth #retrowave"
             + ("" if args.landscape else " #shorts")
         ),
         "tags": ["synthwave", "retrowave", "music visualizer", "original music", "neon"],
