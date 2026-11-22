@@ -49,6 +49,9 @@ def item_links(item: dict, cfg: dict) -> list[Link]:
     links: list[Link] = []
     if item.get("url"):
         links.append(Link(item.get("shop", "商品ページ"), item["url"]))
+    if item.get("rakuten_url") and cfg.get("rakuten_id"):
+        # 楽天の好きなページ（ふるさと納税の特集など）をアフィリエイトリンクにする
+        links.append(Link("楽天", f"https://hb.afl.rakuten.co.jp/hgc/{cfg['rakuten_id']}/?pc={quote(item['rakuten_url'], safe='')}"))
     kw = item.get("search")
     if kw:
         if cfg.get("amazon_tag"):

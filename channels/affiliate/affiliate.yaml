@@ -32,8 +32,26 @@ outro_cta: 紹介アイテムはプロフィールのリンクから！
 # 商品の書き方:
 #   search: 検索キーワード   → Amazon / 楽天の検索結果へのアフィリエイトリンクを自動で作る（手軽）
 #   url:    リンクURL        → 自分で作った商品リンクをそのまま使う（成約率が高い・おすすめ）
+#   rakuten_url: 楽天のページURL → 楽天の好きなページ（特集ページなど）を自動でアフィリエイトリンクにする
 #   どちらか片方、または両方を書けます。
 themes:
+  - id: furusato
+    name: 年内に間に合う！楽天ふるさと納税
+    keywords: [ふるさと納税, 返礼品, 寄付, 控除]
+    items:
+      - name: 楽天ふるさと納税（トップ）
+        comment: 楽天ポイントも貯まる。12月31日の寄付分までがその年の控除の対象
+        rakuten_url: https://event.rakuten.co.jp/furusato/
+      - name: 人気の返礼品「お米」
+        comment: 毎日使うものだから選んで損しにくい
+        search: ふるさと納税 米
+      - name: 人気の返礼品「訳ありホタテ・カニ」
+        comment: 年末年始のごちそうに
+        search: ふるさと納税 訳あり ホタテ
+      - name: 人気の返礼品「日用品（トイレットペーパーなど）」
+        comment: 置き場所さえあれば実質の節約に
+        search: ふるさと納税 トイレットペーパー
+
   - id: zatsugaku
     name: 雑学・クイズが好きな人へ
     default: true
