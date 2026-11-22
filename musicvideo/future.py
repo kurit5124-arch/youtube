@@ -280,18 +280,30 @@ def load_model():
         return None
 
 
-def choose_hook(seed, chords, candidates=160):
+def musical_score(h):
+    """音楽的な良さ：音の動きの豊かさ、同じ音の連続の少なさ、ほどよい音域、なめらかさ"""
+    ps = np.array([m for _, _, m in h])
+    d = np.diff(ps)
+    distinct = len(set(ps))
+    rng_ = ps.max() - ps.min()
+    repeats = np.sum(d == 0)
+    zigzag = np.sum((d[:-1] * d[1:] < 0) & (np.abs(d[:-1]) <= 3) & (np.abs(d[1:]) <= 3))  # 行って戻るだけの動き
+    steps = np.mean((np.abs(d) > 0) & (np.abs(d) <= 4))  # 隣の音へのなめらかな動き
+    leaps = np.sum(np.abs(d) > 7)
+    return (0.5 * min(distinct, 8) - 0.6 * repeats - 0.25 * zigzag + 2.0 * steps - 1.0 * leaps
+            - 0.4 * max(0, rng_ - 14) - 0.4 * max(0, 8 - rng_))
+
+
+def choose_hook(seed, chords, candidates=200):
+    """候補をたくさん作り、①学習した AI で「EDM らしくない」ものを落とし、②音楽的に良いものを選ぶ"""
     rng = np.random.default_rng(seed)
     mdl = load_model()
-    best, best_sc = None, -1e9
-    for _ in range(candidates):
-        h = make_hook(rng, chords)
-        ps = np.array([m for _, _, m in h])
-        leaps = np.abs(np.diff(ps))
-        rule = -0.3 * max(0, ps.max() - ps.min() - 14) - 0.2 * np.sum(leaps > 5) + 0.15 * len(set(ps))
-        sc = rule + 3.0 * model_score(h, chords, mdl)
-        if sc > best_sc:
-            best, best_sc = h, sc
+    hooks = [make_hook(rng, chords) for _ in range(candidates)]
+    if mdl is not None:
+        ai = np.array([model_score(h, chords, mdl) for h in hooks])
+        keep = ai >= np.percentile(ai, 60)  # AI の評価で上位 40% だけ残す
+        hooks = [h for h, k in zip(hooks, keep) if k]
+    best = max(hooks, key=musical_score)
     return best, mdl is not None
 
 
