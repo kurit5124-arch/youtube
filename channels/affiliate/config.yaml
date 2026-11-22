@@ -5,7 +5,7 @@
 #   today  : Wikipedia「今日は何の日」だけ
 #   topics : topics.yaml の雑学ネタ（日替わり）
 source: topics          # このチャンネルは topics.yaml のネタを日替わりで使う
-topics_per_day: 1     # このチャンネルは1日1本（全部のネタを順番に使う）
+topics_per_day: 2     # 1日2本（昼・夜）。同じ日は別のネタになる
 product_ratio: 2      # 商品紹介（選び方）動画を2日、雑学を1日の割合で出す
 timezone: Asia/Tokyo
 
