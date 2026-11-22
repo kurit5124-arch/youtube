@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import html
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, quote_plus
@@ -116,6 +117,13 @@ def auto_theme(tags: list[str], title: str = "") -> dict | None:
     }
 
 
+def topic_theme(title: str, products: list[dict]) -> dict:
+    """ネタ帳の products: から、その動画専用のテーマを作る（商品紹介動画用）。"""
+    tid = "p-" + hashlib.md5(title.encode("utf-8")).hexdigest()[:8]
+    name = re.sub(r"[\n\s]+", "", title)
+    return {"id": tid, "name": f"「{name}」で紹介したアイテム", "keywords": [], "items": [dict(p) for p in products]}
+
+
 def _score(t: dict, text: str, strong: str) -> int:
     return sum((3 if k in strong else 0) + text.count(k) for k in t.get("keywords", []))
 
@@ -127,6 +135,8 @@ def choose_theme(plan: VideoPlan, cfg: dict) -> dict | None:
     2) 無ければ、動画のタグから自動でテーマを作る（auto_theme: false で止められる）
     3) それも無理なら default: true のテーマ
     """
+    if plan.products:  # 商品紹介動画は、その動画で紹介した商品をそのまま使う
+        return topic_theme(plan.subheader, plan.products)
     themes = cfg.get("themes") or []
     text = " ".join([plan.title, plan.header, plan.subheader, " ".join(plan.tags)] +
                     [f"{s.text} {s.narration}" for s in plan.scenes])
@@ -150,20 +160,25 @@ def choose_theme(plan: VideoPlan, cfg: dict) -> dict | None:
 def themes_for_site(cfg: dict, topics: list[dict] | None = None) -> list[dict]:
     """まとめページに載せるテーマ。ネタ帳の中で yaml のテーマに当てはまらないネタの分も自動で足す。"""
     themes = list(cfg.get("themes") or [])
-    if not cfg.get("auto_theme", True):
-        return themes
     specific = [t for t in themes if not t.get("default")]
     seen = {t["id"] for t in themes}
+    product_themes = []
     for tp in topics or []:
+        if tp.get("products"):
+            t = topic_theme(str(tp.get("title", "")), tp["products"])
+            if t["id"] not in seen:
+                seen.add(t["id"])
+                product_themes.append(t)
+            continue
         tags = [str(x) for x in tp.get("tags", [])]
         strong = " ".join([str(tp.get("title", "")), " ".join(tags)])
         if any(_score(t, strong, strong) > 0 for t in specific):
             continue
-        t = auto_theme(tags, str(tp.get("title", "")))
+        t = auto_theme(tags, str(tp.get("title", ""))) if cfg.get("auto_theme", True) else None
         if t and t["id"] not in seen:
             seen.add(t["id"])
             themes.append(t)
-    return themes
+    return product_themes + themes  # 商品紹介はまとめページの上のほうに
 
 
 def apply(plan: VideoPlan, cfg: dict) -> dict | None:

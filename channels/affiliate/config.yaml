@@ -6,6 +6,7 @@
 #   topics : topics.yaml の雑学ネタ（日替わり）
 source: topics          # このチャンネルは topics.yaml のネタを日替わりで使う
 topics_per_day: 1     # このチャンネルは1日1本（全部のネタを順番に使う）
+product_ratio: 2      # 商品紹介（選び方）動画を2日、雑学を1日の割合で出す
 timezone: Asia/Tokyo
 
 # 読み上げ音声（Edge TTS・無料）
