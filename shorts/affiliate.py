@@ -169,9 +169,49 @@ def build_site(cfg: dict, out_dir: Path) -> Path:
 <body><main><h1>{e(title)}</h1>
 <p class="pr">【PR】このページはアフィリエイト広告を利用しています。リンクから購入されると、運営者に紹介料が入ることがあります。</p>
 <nav>{nav}</nav>{"".join(secs)}
-<footer>{notice}<p>価格・在庫は各ショップでご確認ください。</p></footer></main></body></html>
+<footer>{notice}<p>価格・在庫は各ショップでご確認ください。</p><p><a href="privacy.html">プライバシーポリシー</a></p></footer></main></body></html>
 """
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / "index.html"
     out.write_text(page, encoding="utf-8")
+    (out_dir / "privacy.html").write_text(_privacy_page(cfg), encoding="utf-8")
     return out
+
+
+def _privacy_page(cfg: dict) -> str:
+    """Google の OAuth 同意画面（アプリの公開）に必要なプライバシーポリシー。"""
+    amazon = ("<li>Amazonアソシエイト・プログラム（Amazon.co.jp を宣伝しリンクすることで紹介料を獲得できる手段を提供する"
+              "アフィリエイトプログラム）</li>") if cfg.get("amazon_tag") else ""
+    return f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>プライバシーポリシー</title><style>{_CSS} h2{{margin-top:28px}} li{{margin:4px 0}}</style></head>
+<body><main><h1>プライバシーポリシー</h1>
+<p>本ページは、当方が運営する YouTube チャンネル、動画自動投稿ツール「shorts」、および紹介アイテムまとめページ（以下「本サービス」）における情報の取り扱いを定めるものです。</p>
+
+<h2>1. 動画自動投稿ツール（YouTube API）について</h2>
+<ul>
+<li>本ツールは、運営者自身の YouTube チャンネルに動画をアップロードする目的でのみ、YouTube API サービスを利用します。</li>
+<li>利用する権限は動画のアップロード（youtube.upload）のみで、視聴者や第三者のアカウント情報・個人情報を取得・保存・共有することはありません。</li>
+<li>認証情報は運営者のみが管理する環境に保管し、第三者に提供しません。</li>
+<li>本ツールは YouTube API サービスを使用しています。<a href="https://www.youtube.com/t/terms">YouTube 利用規約</a>および
+<a href="https://policies.google.com/privacy">Google プライバシーポリシー</a>もあわせてご確認ください。</li>
+<li>Google のセキュリティ設定ページ（<a href="https://security.google.com/settings/security/permissions">https://security.google.com/settings/security/permissions</a>）から、いつでもアクセス権を取り消せます。</li>
+</ul>
+
+<h2>2. アフィリエイトプログラムについて</h2>
+<p>本サービスは、以下のアフィリエイトプログラムに参加しています。リンク先のショップでは、成果の計測のために Cookie 等が使われることがあります。</p>
+<ul><li>楽天アフィリエイト</li>{amazon}</ul>
+<p>Cookie の取り扱いは各ショップのプライバシーポリシーをご確認ください。ブラウザの設定で Cookie を無効にすることもできます。</p>
+
+<h2>3. アクセス解析・個人情報</h2>
+<p>まとめページでは、アクセス解析ツールや問い合わせフォームを設置しておらず、閲覧者の個人情報を収集していません。</p>
+
+<h2>4. 免責事項</h2>
+<p>紹介している商品の価格・在庫・内容は変わることがあります。購入の際は各ショップの情報をご確認ください。</p>
+
+<h2>5. 改定</h2>
+<p>本ポリシーは必要に応じて改定することがあります。</p>
+
+<p><a href="./">← 紹介アイテムまとめに戻る</a></p>
+<footer><p>制定日：2026年11月22日</p></footer></main></body></html>
+"""
