@@ -4,8 +4,7 @@ on:
   schedule:
     # 時刻は UTC。実行開始から投稿まで数分〜20分ほどかかる
     - cron: "40 21 * * *"   # 朝  6:40 (日本時間) → 7時ごろ「今日は何の日クイズ」
-    - cron: "40 9 * * *"    # 夜 18:40 (日本時間) → 19時ごろ 雑学1本目
-    - cron: "40 11 * * *"   # 夜 20:40 (日本時間) → 21時ごろ 雑学2本目
+    # 雑学は YouTube には投稿しない（scripts/print_trivia.py でチャットに届ける）
   workflow_dispatch:
     inputs:
       source:
@@ -64,8 +63,6 @@ jobs:
           # 定期実行はスケジュールごとに中身を決める
           case "$SCHEDULE" in
             "40 21 * * *") ARGS+=(--source today) ;;
-            "40 9 * * *")  ARGS+=(--source topics --slot 0) ;;
-            "40 11 * * *") ARGS+=(--source topics --slot 1) ;;
           esac
           [ -n "$IN_SOURCE" ] && ARGS+=(--source "$IN_SOURCE")
           [ -n "$IN_SLOT" ] && ARGS+=(--slot "$IN_SLOT")
