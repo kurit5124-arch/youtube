@@ -208,6 +208,27 @@ SECTIONS_LONG = [
 ]
 SECTIONS = SECTIONS_SHORT
 
+# EDM（フェス系／プログレッシブハウスの定番の展開）
+EDM_DROP = {"kick", "snare", "hat", "ohat", "offbass", "sub", "fest", "crash", "fill", "pad"}
+EDM_BUILD = {"piano", "lead_soft", "snare_roll", "riser", "hpsweep", "revcym", "hat"}
+SECTIONS_EDM_LONG = [
+    Section("intro", 8, {"kick_f", "hat", "pad", "arp_f"}),
+    Section("break", 8, {"piano", "pad", "lead_soft"}),
+    Section("build", 8, EDM_BUILD, gap=True),
+    Section("drop", 16, EDM_DROP),
+    Section("break2", 8, {"piano", "pad", "arp_f", "lead_soft"}),
+    Section("build2", 8, EDM_BUILD, gap=True),
+    Section("drop2", 16, EDM_DROP | {"arp", "lead_hi"}),
+    Section("outro", 8, {"kick_f", "hat", "pad", "piano"}),
+]
+SECTIONS_EDM_SHORT = [
+    Section("break", 4, {"piano", "pad", "lead_soft"}),
+    Section("build", 4, EDM_BUILD, gap=True),
+    Section("drop", 8, EDM_DROP),
+    Section("drop2", 8, EDM_DROP | {"arp", "lead_hi"}),
+    Section("outro", 2, {"pad", "piano"}),
+]
+
 # ブリッジ用（F → G → Em → Am）
 BRIDGE = [(53, "M"), (55, "M"), (52, "m"), (57, "m")]
 
@@ -226,6 +247,12 @@ RHYTHMS = {
         [(0, 1.5), (1.5, 0.5), (2, 1), (3, 0.5), (3.5, 0.5)],
         [(0, 0.75), (0.75, 0.75), (1.5, 1), (2.5, 0.5), (3, 1)],
         [(0, 1), (1, 0.5), (1.5, 1.5), (3, 1)],
+    ],
+    # フェス系 EDM のフック：8分と付点のシンコペーション
+    "edm": [
+        [(0, 0.5), (0.75, 0.5), (1.5, 0.5), (2, 0.5), (2.5, 0.5), (3, 0.75)],
+        [(0, 0.75), (0.75, 0.75), (1.5, 0.5), (2.5, 0.5), (3, 0.5), (3.5, 0.5)],
+        [(0, 1), (1, 0.5), (1.5, 0.5), (2, 0.75), (2.75, 0.75), (3.5, 0.5)],
     ],
     # 16分の裏を突くシンコペーション多め（ノリ重視）
     "hard": [
@@ -315,6 +342,36 @@ def _hook(rng, prog, style="hard") -> list[tuple[float, float, int]]:
     return out
 
 
+def piano(m: float, dur: float) -> np.ndarray:
+    """倍音が順に減衰するピアノ風の音"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    f = mtof(m)
+    s = np.zeros(n)
+    for k, a in enumerate((1.0, 0.6, 0.35, 0.25, 0.15, 0.1), start=1):
+        s += a * np.sin(2 * np.pi * k * f * (1 + 0.0004 * k * k) * t) * np.exp(-t * (1.2 + 0.9 * k))
+    return s * adsr(n, 0.003, 0.0, 1.0, 0.08) * 0.5
+
+
+def hp_sweep(x: np.ndarray, i0: int, i1: int, f0: float, f1: float) -> None:
+    """x[i0:i1] にだんだん上がるハイパスをかける（ビルドで低音が抜けていく定番の効果）"""
+    seg = x[i0:i1]
+    n = len(seg)
+    win, hop = 4096, 2048
+    w = np.hanning(win + 1)[:-1]
+    freqs = np.fft.rfftfreq(win, 1 / SR)
+    out = np.zeros(n + win)
+    for st in range(0, n, hop):
+        chunk = np.zeros(win)
+        part = seg[st:st + win]
+        chunk[:len(part)] = part
+        fc = f0 * (f1 / f0) ** (st / n)
+        r = freqs / fc
+        y = np.fft.irfft(np.fft.rfft(chunk * w) * (r ** 4 / (1 + r ** 4)), win)
+        out[st:st + win] += y
+    x[i0:i1] = out[:n]
+
+
 def tom(rng, f0: float) -> np.ndarray:
     n = int(0.3 * SR)
     t = np.arange(n) / SR
@@ -323,8 +380,8 @@ def tom(rng, f0: float) -> np.ndarray:
     return np.tanh(s * 1.8) * 0.6 + rng.standard_normal(n) * np.exp(-t * 60) * 0.1
 
 
-STYLES = ("hard", "synthwave")
-DEFAULT_BPM = {"hard": 140, "synthwave": 128}
+STYLES = ("hard", "edm", "synthwave")
+DEFAULT_BPM = {"hard": 140, "edm": 128, "synthwave": 128}
 
 
 def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "NEON DRIVE",
@@ -333,10 +390,17 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
     """length="short" で約1分、"long" で約3分の曲を作る。
     style="hard" は速くて激しいダークシンセ、"synthwave" はゆったりめのシンセウェーブ。"""
     rng = np.random.default_rng(seed)
-    hard = style == "hard"
+    hard = style in ("hard", "edm")   # 硬いキック・スネアなど共通の部分
+    edm = style == "edm"
     bpm = bpm or DEFAULT_BPM[style]
-    sections = SECTIONS_LONG if length == "long" else SECTIONS_SHORT
-    progs = [PROGRESSIONS[seed % len(PROGRESSIONS)], BRIDGE]
+    if edm:
+        sections = SECTIONS_EDM_LONG if length == "long" else SECTIONS_EDM_SHORT
+        progs = [PROGRESSIONS[0], BRIDGE]  # i - VI - III - VII（Am F C G）
+        if melody_seed is None:
+            melody_seed = seed + 100
+    else:
+        sections = SECTIONS_LONG if length == "long" else SECTIONS_SHORT
+        progs = [PROGRESSIONS[seed % len(PROGRESSIONS)], BRIDGE]
     melodies = [_melody(rng, progs[0], style), _melody(rng, progs[0], style), _melody(rng, progs[1], style)]
     if melody_seed is not None:
         # メロディだけ別の乱数で作り直す（コード・ドラム・音色はそのまま）
@@ -354,6 +418,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
     bus = {k: np.zeros(N) for k in ("drums", "bass", "music", "lead", "fx")}
     kick_env = np.zeros(N)  # サイドチェイン用
     gaps = []
+    sweeps = []
 
     def put(name, sig, t, gain=1.0):
         i = int(t * SR)
@@ -426,7 +491,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
                         put("music", lowpass(h, 6000), t0 + k * d + d, 0.04)
 
             # ベース（8分刻みのオクターブ）＋サブベース
-            if hard and "bass" in L:
+            if hard and not edm and "bass" in L:
                 # ローリングベース：キックの拍を空けて 16分の 2・3・4 つ目で刻む
                 d = beat / 4
                 for q in range(4):
@@ -472,8 +537,49 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
                     s = lowpass(s, cut, reso=0.6) * adsr(n, 0.005, 0.15, 0.75, 0.05)
                     put("lead", s, t0 + lp * beat, 0.1 if "lead_soft" in L else 0.16)
 
+            # ピアノのコード（ピアノハウス風のリズム）
+            if "piano" in L:
+                voicing = sorted({m for o in (0, 12) for m in (root + o + i for i in TRIAD[kind]) if 60 <= m <= 74})
+                voicing = [root - 12] + voicing
+                for pos, ln in ((0, 1.5), (1.5, 1.5), (3, 1.0)):
+                    for m in voicing:
+                        put("music", piano(m, ln * beat * 1.4), t0 + pos * beat, 0.11)
+
+            # 裏拍のベース＋サブ（ハウスの定番）
+            if "offbass" in L:
+                for q in range(4):
+                    n = int(beat * 0.45 * SR)
+                    m = root - 12
+                    raw = saw(mtof(m), n) + saw(mtof(m + 0.1), n, 0.5) + 0.6 * square(mtof(m - 12), n)
+                    s = np.tanh(lowpass(raw, 1100, reso=0.8) * 1.8) * adsr(n, 0.003, 0.08, 0.7, 0.03)
+                    put("bass", s, t0 + q * beat + beat / 2, 0.3)
+
+            # フェス系リード：メロディをコードの音で厚く重ねたスーパーソウ
+            if "fest" in L:
+                mb = b % 8
+                for pos, ln, m in melody:
+                    if not (mb * 4 <= pos < (mb + 1) * 4):
+                        continue
+                    oct_ = 12 if "lead_hi" in L and (b // 4) % 2 == 1 else 0
+                    top = m + oct_
+                    stack = [top, top - 12] + [c for o in (12, 24, 36) for c in (root + o + i for i in TRIAD[kind])
+                                               if top - 12 < c < top]
+                    n = int(ln * beat * SR)
+                    s = np.zeros(n)
+                    for v in stack:
+                        s += supersaw(v, n / SR, voices=9, detune=0.3, rng=rng) * (1.0 if v == top else 0.6)
+                    s = np.tanh(s / np.sqrt(len(stack)) * 1.4)
+                    s = highpass(lowpass(s, 9000, reso=0.4), 180) * adsr(n, 0.004, 0.12, 0.8, 0.05)
+                    put("lead", s, t0 + (pos % 4) * beat, 0.2)
+
+            if "hpsweep" in L and b == 0:
+                sweeps.append((t0, t0 + sec.bars * bar))
+            if "revcym" in L and b == sec.bars - 1:
+                rc = crash(rng)[: int(bar * SR)][::-1]
+                put("fx", rc, t0 + bar - len(rc) / SR, 1.2)
+
             # コードの刻み（裏拍のスタブ）
-            if hard and "kick" in L:
+            if hard and not edm and "kick" in L:
                 for pos16 in (2, 6, 10, 13):
                     n = int(beat / 4 * 1.6 * SR)
                     s = np.zeros(n)
@@ -484,7 +590,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
                     put("fx", s, t0 + pos16 * beat / 4 + beat * 0.75, 0.025)
 
             # ドラム
-            if hard and sec.name.startswith("build") and b >= sec.bars - 4:
+            if hard and not edm and sec.name.startswith("build") and b >= sec.bars - 4:
                 # ビルドの最後はキックがだんだん細かくなる
                 per = [4, 4, 8, 16][b - (sec.bars - 4)]
                 for k in range(per):
@@ -526,7 +632,15 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
             if fill_bar:  # 8小節ごとのタムのフィル
                 for k in range(4):
                     put("drums", toms[k], t0 + 3 * beat + k * beat / 4, 0.8)
-            if "snare_roll" in L and b >= sec.bars - 4:
+            if "snare_roll" in L and edm:
+                steps = [4, 4, 8, 8, 16, 16, 32, 32][b * 8 // sec.bars]
+                for k in range(steps):
+                    p = (b + k / steps) / sec.bars
+                    ratio = 1 + 0.9 * p ** 2   # だんだん音程が上がる
+                    idx = np.arange(0, len(sn_s) - 1, ratio)
+                    sig = np.interp(idx, np.arange(len(sn_s)), sn_s)
+                    put("drums", sig, t0 + k * bar / steps, 0.15 + 0.55 * p)
+            elif "snare_roll" in L and b >= sec.bars - 4:
                 steps = [4, 8, 16, 16][b - (sec.bars - 4)]
                 for k in range(steps):
                     p = (b - (sec.bars - 4) + k / steps) / 4
@@ -541,6 +655,11 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
         if sec.gap:
             end = bar_i * bar
             gaps.append((end - beat / 2, end))
+
+    # ビルドで低音を抜いていく（ハイパスのスイープ）
+    for s0, s1 in sweeps:
+        for k in ("music", "lead", "bass"):
+            hp_sweep(bus[k], int(s0 * SR), min(N, int(s1 * SR)), 30, 1800)
 
     # ドロップ直前の一瞬の無音（ライザーだけ残す）
     for g0, g1 in gaps:

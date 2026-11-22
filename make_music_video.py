@@ -26,9 +26,9 @@ from musicvideo.thumbnail import make_thumbnails
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--style", choices=["hard", "synthwave"], default="hard",
-                    help="曲の雰囲気 hard=速くて激しいダークシンセ（既定） / synthwave=ゆったりめ")
-    ap.add_argument("--title", help="画面に出す曲名（既定: hard は OVERDRIVE、synthwave は NEON DRIVE）")
+    ap.add_argument("--style", choices=["hard", "edm", "synthwave"], default="hard",
+                    help="曲の雰囲気 hard=速くて激しいダークシンセ（既定） / edm=フェス系EDM / synthwave=ゆったりめ")
+    ap.add_argument("--title", help="画面に出す曲名（既定: hard=OVERDRIVE, edm=SKYLINE, synthwave=NEON DRIVE）")
     ap.add_argument("--subtitle", help="曲名の下の小さい文字")
     ap.add_argument("--seed", type=int, default=7, help="作曲と景色のパターン（数字を変えると別の曲に）")
     ap.add_argument("--melody-seed", type=int, help="メロディだけ変える（コード・音色・映像はそのまま）")
@@ -45,8 +45,8 @@ def main() -> int:
     ap.add_argument("--workers", type=int, help="並列数（既定: CPU 数）")
     ap.add_argument("--out", type=Path, default=Path("output"), help="出力フォルダ")
     args = ap.parse_args()
-    genre = "DARKSYNTH" if args.style == "hard" else "SYNTHWAVE"
-    args.title = args.title or ("OVERDRIVE" if args.style == "hard" else "NEON DRIVE")
+    genre = {"hard": "DARKSYNTH", "edm": "EDM", "synthwave": "SYNTHWAVE"}[args.style]
+    args.title = args.title or {"hard": "OVERDRIVE", "edm": "SKYLINE", "synthwave": "NEON DRIVE"}[args.style]
     args.subtitle = args.subtitle or f"{genre}  ·  ORIGINAL TRACK"
 
     W, H = (1920, 1080) if args.landscape else (1080, 1920)
@@ -85,9 +85,9 @@ def main() -> int:
         make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed, hue=args.hue)
 
     meta = {
-        "title": f"{args.title} | {genre.title()} Original Track",
+        "title": f"{args.title} | {genre if args.style == 'edm' else genre.title()} Original Track",
         "description": (
-            f"{args.title} — プログラムで自動作曲したオリジナルの{genre.title()}曲と、"
+            f"{args.title} — プログラムで自動作曲したオリジナルの{genre if args.style == 'edm' else genre.title()}曲と、"
             "音に合わせて動くネオンのイラスト。\n\n#synthwave #darksynth #retrowave"
             + ("" if args.landscape else " #shorts")
         ),

@@ -82,6 +82,7 @@ Google の審査（API 監査）を通していないプロジェクトから AP
 python make_music_video.py                  # 作曲 → イラスト → 縦型MV（約1分・ショート向け）
 python make_music_video.py --landscape      # 横型 1920x1080・約3分（通常動画向け）
 python make_music_video.py --style synthwave  # ゆったりめのシンセウェーブにする
+python make_music_video.py --style edm      # フェス系 EDM（ピアノのブレイク→ビルドアップ→分厚いリードのドロップ）
 python make_music_video.py --seed 3         # 別の曲・別の景色
 python make_music_video.py --title "MIDNIGHT RUN"
 python make_music_video.py --preview 8      # 最初の8秒だけ（確認用）
