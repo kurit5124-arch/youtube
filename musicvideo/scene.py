@@ -102,8 +102,8 @@ class Post:
         self.scan = scan[:, None, None]
         self.grain = [(rng.standard_normal((H // 2, W // 2)).astype(np.float32) * 0.018) for _ in range(6)]
 
-    def set_hue_track(self, f: Features):
-        steps = [0, 0, -35, 28, -60]
+    def set_hue_track(self, f: Features, base: float = 0.0):
+        steps = [base + v for v in (0, 0, -35, 28, -60)]
         n_drop = np.cumsum(f.drop >= 0.999)
         target = np.array([steps[min(k, len(steps) - 1)] for k in n_drop], np.float32)
         hue = np.zeros_like(target)
@@ -218,7 +218,8 @@ def _title_layers(W, H, title, subtitle, y_center, width_frac=0.86):
 class NeonDriveScene:
     """シンセウェーブの夜道を走る車のイラスト（すべてプログラムで描画）"""
 
-    def __init__(self, W, H, feats: Features, title="NEON DRIVE", subtitle="SYNTHWAVE  ·  ORIGINAL TRACK", seed=7):
+    def __init__(self, W, H, feats: Features, title="NEON DRIVE", subtitle="SYNTHWAVE  ·  ORIGINAL TRACK", seed=7,
+                 hue=0.0):
         self.W, self.H, self.f = W, H, feats
         rng = np.random.default_rng(seed)
         self.rng = rng
@@ -280,7 +281,7 @@ class NeonDriveScene:
 
         self.particles = Particles(W, H, rng)
         self.post = Post(W, H, rng)
-        self.post.set_hue_track(feats)
+        self.post.set_hue_track(feats, hue)
         # 円形スペクトラムの角度
         nb = feats.spectrum.shape[1]
         self.ring_angles = np.linspace(np.pi, 1.5 * np.pi, nb)  # 左上の4分の1（右は鏡写し）
@@ -506,7 +507,7 @@ class NeonDriveScene:
 class ImageScene:
     """手持ちのイラスト（AI で描いた絵など）を音に合わせて動かす"""
 
-    def __init__(self, W, H, feats: Features, image: Path, title="", subtitle="", seed=7):
+    def __init__(self, W, H, feats: Features, image: Path, title="", subtitle="", seed=7, hue=0.0):
         self.W, self.H, self.f = W, H, feats
         self.rng = np.random.default_rng(seed)
         src = Image.open(image).convert("RGB")
@@ -518,7 +519,7 @@ class ImageScene:
         self.bright = (self.src * np.clip((lum - 0.6) / 0.4, 0, 1)[..., None]).astype(np.float32)
         self.particles = Particles(W, H, self.rng)
         self.post = Post(W, H, self.rng)
-        self.post.set_hue_track(feats)
+        self.post.set_hue_track(feats, hue)
         self.bars = feats.spectrum.shape[1]
         if title:
             self.title_rgb, self.title_a, g = _title_layers(W, H, title, subtitle, int(H * 0.12))

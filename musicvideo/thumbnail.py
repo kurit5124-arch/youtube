@@ -161,9 +161,9 @@ def design_c(bg: Image.Image, title: str, genre: str, bpm: str) -> Image.Image:
 
 
 def make_thumbnails(audio: Path, title: str, out_prefix: Path, genre: str = "DARKSYNTH",
-                    bpm: str = "140", seed: int = 7) -> list[Path]:
+                    bpm: str = "140", seed: int = 7, hue: float = 0.0) -> list[Path]:
     paths = []
-    bg = _background(audio, seed)
+    bg = _background(audio, seed, hue=hue)
     bg_red = _background(audio, seed, hue=22)
     for name, fn, b in (("a", design_a, bg), ("b", design_b, bg_red), ("c", design_c, bg)):
         p = Path(f"{out_prefix}_thumb_{name}.jpg")
@@ -179,6 +179,7 @@ if __name__ == "__main__":
     ap.add_argument("--genre", default="DARKSYNTH")
     ap.add_argument("--bpm", default="140")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--hue", type=float, default=0.0)
     a = ap.parse_args()
-    for p in make_thumbnails(a.audio, a.title, a.audio.with_suffix(""), a.genre, a.bpm, a.seed):
+    for p in make_thumbnails(a.audio, a.title, a.audio.with_suffix(""), a.genre, a.bpm, a.seed, a.hue):
         print(p)

@@ -275,7 +275,7 @@ DEFAULT_BPM = {"hard": 140, "synthwave": 128}
 
 
 def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "NEON DRIVE",
-            length: str = "short", style: str = "hard") -> Path:
+            length: str = "short", style: str = "hard", key: int = 0) -> Path:
     """length="short" で約1分、"long" で約3分の曲を作る。
     style="hard" は速くて激しいダークシンセ、"synthwave" はゆったりめのシンセウェーブ。"""
     rng = np.random.default_rng(seed)
@@ -284,6 +284,9 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
     sections = SECTIONS_LONG if length == "long" else SECTIONS_SHORT
     progs = [PROGRESSIONS[seed % len(PROGRESSIONS)], BRIDGE]
     melodies = [_melody(rng, progs[0], style), _melody(rng, progs[0], style), _melody(rng, progs[1], style)]
+    # key: 半音いくつ上げ下げするか（-3 なら Aマイナー → F#マイナー）
+    progs = [[(r + key, k) for r, k in p] for p in progs]
+    melodies = [[(pos, ln, m + key) for pos, ln, m in mel] for mel in melodies]
     beat = 60 / bpm
     bar = beat * 4
     total_bars = sum(s.bars for s in sections)
@@ -494,7 +497,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
     end_t = total_bars * bar
     n = int(tail * SR)
     s = np.zeros(n)
-    for m in [57, 60, 64, 69]:
+    for m in [57 + key, 60 + key, 64 + key, 69 + key]:
         s += supersaw(m, tail, rng=rng)
     put("music", lowpass(s, 1500) * adsr(n, 0.01, 0.5, 0.5, 1.8), end_t, 0.08)
     put("fx", impact(rng), end_t, 0.8)

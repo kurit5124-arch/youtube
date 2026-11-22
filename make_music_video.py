@@ -31,6 +31,8 @@ def main() -> int:
     ap.add_argument("--title", help="画面に出す曲名（既定: hard は OVERDRIVE、synthwave は NEON DRIVE）")
     ap.add_argument("--subtitle", help="曲名の下の小さい文字")
     ap.add_argument("--seed", type=int, default=7, help="作曲と景色のパターン（数字を変えると別の曲に）")
+    ap.add_argument("--key", type=int, default=0, help="曲の高さを半音いくつ上下するか（例: -3 で F#マイナー）")
+    ap.add_argument("--hue", type=float, default=0.0, help="映像の色味を回す角度（例: -40 で青っぽく、20 で赤っぽく）")
     ap.add_argument("--bpm", type=float, help="テンポ（既定: hard=140, synthwave=128）")
     ap.add_argument("--length", choices=["short", "long"],
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
@@ -58,14 +60,14 @@ def main() -> int:
         audio = args.out / f"{slug}{'_landscape' if args.landscape else ''}.mp3"
         length = args.length or ("long" if args.landscape else "short")
         print(f"[1/3] 作曲中…（{args.style}, seed={args.seed}, {length}）")
-        compose(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length, style=args.style)
+        compose(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length, style=args.style, key=args.key)
         print(f"      → {audio}")
 
     print("[2/3] 音を解析中…")
     feats = analyze(audio, fps=args.fps)
 
     kind = "image" if args.image else "neon"
-    opts = dict(title=args.title, subtitle=args.subtitle, seed=args.seed)
+    opts = dict(title=args.title, subtitle=args.subtitle, seed=args.seed, hue=args.hue)
     if args.image:
         opts["image"] = args.image
     suffix = "_landscape" if args.landscape else ""
@@ -78,7 +80,7 @@ def main() -> int:
     if not args.image:
         print("[+] サムネイルを作成中…（a/b/c の3種類）")
         bpm = f"{args.bpm or (140 if args.style == 'hard' else 128):g}"
-        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed)
+        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed, hue=args.hue)
 
     meta = {
         "title": f"{args.title} | {genre.title()} Original Track",
