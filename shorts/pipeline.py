@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import render, tts
+from . import render, tts, viral
 from .models import VideoPlan
 
 
@@ -12,6 +12,10 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
     workdir.mkdir(parents=True, exist_ok=True)
     if plan.voice:  # ネタごとの声（例: 犯人風の低い声）
         cfg = {**cfg, "voice": {**cfg.get("voice", {}), **plan.voice}}
+    if plan.style.startswith("viral"):  # 伸びている雑学ショートの定番レイアウト
+        viral.build(plan, cfg, workdir, out, allow_silent)
+        _write_meta(plan, out, viral.last_total)
+        return out
     font = render.find_font(cfg.get("font"))
     max_len = plan.max_seconds or float(cfg.get("max_seconds", 58))
     gap = float(cfg.get("scene_gap", 0.35))
@@ -62,7 +66,11 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
     out.parent.mkdir(parents=True, exist_ok=True)
     render.finalize(segs, total, out, bgm, vol, render.accent_of(plan))
 
+    _write_meta(plan, out, total)
+    return out
+
+
+def _write_meta(plan: VideoPlan, out: Path, total: float) -> None:
     meta = {"title": plan.title, "description": plan.description, "tags": plan.tags,
             "duration": round(total, 2), "scenes": [s.__dict__ for s in plan.scenes]}
     out.with_suffix(".json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    return out

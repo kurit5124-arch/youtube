@@ -39,3 +39,4 @@ class VideoPlan:
     style: str = ""              # 見た目（"" = いつもの / "noir" = 犯人の自白風）
     bgm: str = ""                # この動画だけ使う BGM ファイル（空なら bgm_dir から日替わり）
     bgm_volume: float | None = None
+    headline: str = ""           # style: viral のとき画面上部に出しっぱなしにするタイトル（{ }で強調）

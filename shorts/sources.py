@@ -292,7 +292,8 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
             text = narr = str(p)
             em = illust.pick_one(text, fallback=main_em)
         point_ems.append(em)
-        scenes.append(Scene(kind="item", label=f"{t.get('point_label', 'その')}{n}", text=text, emoji=em, narration=_sentence(narr)))
+        lab = p.get("label") if isinstance(p, dict) and p.get("label") else f"{t.get('point_label', 'その')}{n}"
+        scenes.append(Scene(kind="item", label=lab, text=text, emoji=em, narration=_sentence(narr)))
     scenes.append(Scene(kind="outro", label=t.get("outro_label", "SEE YOU"),
                         text=t.get("outro_text", "チャンネル登録\nしてね！"), emoji=t.get("outro_emoji", "🙌"),
                         narration=t.get("outro", cfg.get("outro_narration", "明日もお楽しみに！チャンネル登録よろしくお願いします。"))))
@@ -307,7 +308,7 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
                      emojis=list(dict.fromkeys([main_em] + point_ems)),
                      products=list(t.get("products") or []),
                      voice=dict(t.get("voice") or {}), style=t.get("style", ""), bgm=t.get("bgm", ""),
-                     bgm_volume=t.get("bgm_volume"))
+                     bgm_volume=t.get("bgm_volume"), headline=t.get("headline", ""))
 
 
 def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None,

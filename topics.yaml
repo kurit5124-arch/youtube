@@ -424,32 +424,33 @@
       narration: アフリカゾウは、今いる陸の動物の中で一番大きな動物です。
   tags: [ゾウ, 雑学, 動物, shorts]
 
-# ----- 犯人の自白シリーズ（低い声・暗い画面）-----
-# 伸びた「猫の意外な雑学」と同じ「つかみ＋3つ＋締め」の形で、犯人が白状するように語る
+# ----- 犯人の自白シリーズ（低い声・伸びている雑学ショートの定番レイアウト）-----
+# style: viral_noir = 上にタイトル出しっぱなし＋中央に大きな絵＋声に合わせて切り替わる字幕（黒×赤）
+# 字幕は narration から自動で作る。「」で囲んだ言葉は黄色で強調。headline の { } も強調。
 - title: 猫の自白
-  header: 犯人の自白
+  header: 【犯人の自白】
+  headline: "猫が人間に隠してきた\n{3つの秘密}"
   label: 自白
-  point_label: 自白その
   emoji: 🐈‍⬛
-  style: noir
-  voice: {name: ja-JP-KeitaNeural, rate: "-8%", pitch: "-22Hz", filter: "aecho=0.8:0.6:45:0.22,lowpass=f=6000"}
+  style: viral_noir
+  voice: {name: ja-JP-KeitaNeural, rate: "+5%", pitch: "-22Hz", filter: "aecho=0.8:0.5:40:0.18,lowpass=f=6500"}
   bgm: assets/bgm_special/suspense.mp3
-  bgm_volume: 0.35
-  hook: ……もう隠しても無駄か。犯人は、俺だ。猫の秘密を三つ、白状しよう。
-  hook_text: "犯人は…\n猫だった"
+  bgm_volume: 0.4
+  hook: 俺は猫だ。……人間に隠してきた秘密を、「白状」しよう。
   points:
-    - text: "「ニャー」は\n人間専用の声"
-      narration: あの「ニャー」という声……実はな、大人の猫同士では、ほとんど使わない。お前たち人間を動かすための声なんだよ。
-      emoji: 🗣️
-    - text: "ゴロゴロ＝ご機嫌\nとは限らない"
-      narration: ゴロゴロと喉を鳴らすのは、機嫌がいいときだけじゃない。具合が悪いときや、不安なときにも鳴らすことがある。
+    - text: 「ニャー」は人間専用
+      label: 秘密①
+      narration: あの「ニャー」という声……大人の猫同士では、ほとんど使わない。「人間を動かすため」の声なんだよ。
+      emoji: 🐈
+    - text: ゴロゴロ＝ご機嫌とは限らない
+      label: 秘密②
+      narration: 喉のゴロゴロは、ご機嫌の合図……とは限らない。「具合が悪いとき」にも、鳴らすことがある。
       emoji: 😿
-    - text: "舌のトゲは\nブラシ代わり"
-      narration: 俺の舌がザラザラしているのは、細かいトゲが並んでいるからだ。これで毛をとかし、汚れを落としている。……毎日、念入りにな。
+    - text: 舌のトゲはブラシ代わり
+      label: 秘密③
+      narration: 舌がザラザラなのは、細かい「トゲ」が並んでいるからだ。これが「ブラシ」の代わりになる。
       emoji: 👅
-  outro: ……これで全部だ。もっと知りたければ、チャンネル登録しておけ。次は、誰が白状するかな。
-  outro_text: "次の犯人は…\nチャンネル登録で"
-  outro_label: 取り調べ終了
+  outro: ……これで全部だ。次の犯人が知りたければ、「チャンネル登録」しておけ。
   outro_emoji: 🔍
   youtube_title: 【自白】猫が人間に隠してきた3つの秘密 #shorts
   tags: [猫, 雑学, 動物, 自白, 犯人, shorts]

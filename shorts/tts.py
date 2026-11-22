@@ -64,6 +64,54 @@ def synthesize(text: str, out: Path, cfg: dict, allow_silent: bool = False) -> f
     return duration(out)
 
 
+async def _edge_words(text: str, out: Path, voice: str, rate: str, pitch: str) -> list[tuple[float, float, str]]:
+    import edge_tts
+
+    ca = os.environ.get("SSL_CERT_FILE")
+    if ca and os.path.exists(ca):
+        import ssl
+
+        import edge_tts.communicate as comm
+        comm._SSL_CTX = ssl.create_default_context(cafile=ca)
+    words = []
+    com = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, boundary="WordBoundary")
+    with open(out, "wb") as f:
+        async for ch in com.stream():
+            if ch["type"] == "audio":
+                f.write(ch["data"])
+            elif ch["type"] == "WordBoundary":
+                words.append((ch["offset"] / 1e7, ch["duration"] / 1e7, ch["text"]))
+    return words
+
+
+def synthesize_words(text: str, out: Path, cfg: dict, allow_silent: bool = False) -> tuple[float, list]:
+    """synthesize と同じだが、字幕を声に合わせるため単語ごとの開始秒も返す。"""
+    vc = cfg.get("voice", {})
+    try:
+        words = []
+        for attempt in range(3):
+            try:
+                words = asyncio.run(_edge_words(text, out, vc.get("name", "ja-JP-NanamiNeural"),
+                                                vc.get("rate", "+15%"), vc.get("pitch", "+0Hz")))
+                if out.exists() and out.stat().st_size > 0:
+                    break
+            except Exception:
+                if attempt == 2:
+                    raise
+        if vc.get("filter"):
+            tmp = out.with_name(out.stem + "_f.mp3")
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(out), "-af", vc["filter"],
+                            "-c:a", "libmp3lame", str(tmp)], check=True)
+            tmp.replace(out)
+    except Exception as e:  # noqa: BLE001
+        if not allow_silent:
+            raise RuntimeError(f"音声合成に失敗しました: {e}") from e
+        print(f"[warn] 音声合成できないので無音で代用します ({type(e).__name__})")
+        _silent(text, out)
+        words = []
+    return duration(out), words
+
+
 def tick(out: Path, high: bool = False) -> None:
     """カウントダウンの「ピッ」（1秒）。"""
     f = 1320 if high else 880
