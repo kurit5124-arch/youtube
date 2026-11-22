@@ -9,8 +9,9 @@ name: アフィリエイト用チャンネルに毎日投稿
 
 on:
   schedule:
-    # 毎日 18:40 (日本時間) = 09:40 (UTC) に作り始め、19時ごろに投稿される
-    - cron: "40 9 * * *"
+    # 時刻は UTC。1日2本（チャンネルを早く育てるため）
+    - cron: "40 2 * * *"    # 昼 11:40 (日本時間) → 12時ごろ
+    - cron: "40 9 * * *"    # 夜 18:40 (日本時間) → 19時ごろ
   workflow_dispatch:
     inputs:
       topic_index:
@@ -59,8 +60,14 @@ jobs:
           IN_INDEX: ${{ inputs.topic_index }}
           IN_UPLOAD: ${{ inputs.upload }}
           EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
           ARGS=(--channel affiliate)
+          # 昼の回は1本目、夜の回は2本目（同じ日に別のネタになる）
+          case "$SCHEDULE" in
+            "40 2 * * *") ARGS+=(--slot 0) ;;
+            "40 9 * * *") ARGS+=(--slot 1) ;;
+          esac
           [ -n "$IN_INDEX" ] && ARGS+=(--topic-index "$IN_INDEX")
           if [ "$EVENT" = "schedule" ] || [ "$IN_UPLOAD" = "true" ]; then
             if [ -n "$YT_REFRESH_TOKEN" ]; then
