@@ -1,0 +1,79 @@
+name: アフィリエイト用チャンネルに毎日投稿
+
+# メインのクイズチャンネルとは別の YouTube チャンネルに投稿します。
+# 設定は channels/affiliate/（config.yaml / topics.yaml / affiliate.yaml）。
+# 必要な Secrets: YT2_REFRESH_TOKEN（別チャンネルで取得したもの）
+#   YT2_CLIENT_ID / YT2_CLIENT_SECRET は省略するとメインと同じ YT_CLIENT_ID / YT_CLIENT_SECRET を使う
+# 任意の Variables: AMAZON_ASSOCIATE_TAG / RAKUTEN_AFFILIATE_ID
+
+on:
+  schedule:
+    # 毎日 18:40 (日本時間) = 09:40 (UTC) に作り始め、19時ごろに投稿される
+    - cron: "40 9 * * *"
+  workflow_dispatch:
+    inputs:
+      topic_index:
+        description: "channels/affiliate/topics.yaml の何番目を使うか（0始まり、空なら日替わり）"
+        default: ""
+      upload:
+        description: "YouTube に投稿する"
+        type: boolean
+        default: true
+
+concurrency:
+  group: affiliate-short
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Tokyo
+      YT_CLIENT_ID: ${{ secrets.YT2_CLIENT_ID || secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT2_CLIENT_SECRET || secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT2_REFRESH_TOKEN }}
+      AMAZON_ASSOCIATE_TAG: ${{ vars.AMAZON_ASSOCIATE_TAG }}
+      RAKUTEN_AFFILIATE_ID: ${{ vars.RAKUTEN_AFFILIATE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: ffmpeg と日本語フォントを入れる
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-noto-cjk fonts-noto-cjk-extra fonts-noto-color-emoji
+
+      - name: Python ライブラリを入れる
+        run: pip install -r requirements.txt
+
+      - name: 動画を作る（＋投稿）
+        env:
+          IN_INDEX: ${{ inputs.topic_index }}
+          IN_UPLOAD: ${{ inputs.upload }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          ARGS=(--channel affiliate)
+          [ -n "$IN_INDEX" ] && ARGS+=(--topic-index "$IN_INDEX")
+          if [ "$EVENT" = "schedule" ] || [ "$IN_UPLOAD" = "true" ]; then
+            if [ -n "$YT_REFRESH_TOKEN" ]; then
+              ARGS+=(--upload)
+            else
+              echo "::warning::Secrets の YT2_REFRESH_TOKEN が未設定なので、動画ファイルだけ作ります"
+            fi
+          fi
+          python main.py "${ARGS[@]}"
+
+      - name: 動画ファイルを保存（Actions の画面からダウンロード可）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: affiliate-short-${{ github.run_number }}
+          path: |
+            output/*.mp4
+            output/*.json
+          retention-days: 14

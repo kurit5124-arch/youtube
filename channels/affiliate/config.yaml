@@ -1,0 +1,39 @@
+# ===== アフィリエイト用チャンネルの設定（python main.py --channel affiliate） =====
+
+# ネタの取り方
+#   auto   : Wikipedia「今日は何の日」→ 失敗したら topics.yaml
+#   today  : Wikipedia「今日は何の日」だけ
+#   topics : topics.yaml の雑学ネタ（日替わり）
+source: topics          # このチャンネルは topics.yaml のネタを日替わりで使う
+timezone: Asia/Tokyo
+
+# 読み上げ音声（Edge TTS・無料）
+#   女性: ja-JP-NanamiNeural  男性: ja-JP-KeitaNeural
+voice:
+  name: ja-JP-KeitaNeural
+  rate: "+25%"     # 話す速さ
+  pitch: "+0Hz"
+
+max_seconds: 58      # ショートに収めるための最大秒数（超えたら項目を減らす）
+scene_gap: 0.2       # シーン間の間（秒）
+bgm_dir: assets/bgm  # ここに mp3 を置くと BGM として使う（著作権フリーのものを）
+bgm_volume: 0.15
+# font: assets/fonts/YourFont.ttf   # 好きなフォントを使う場合
+
+outro_narration: 役立ったらチャンネル登録お願いします！
+
+today:
+  format: quiz           # quiz = 3択「何年？」クイズ / list = 出来事の紹介
+  quiz_max_chars: 36     # クイズの問題文の最大文字数（長いと3問入らない）
+  num_events: 3          # 紹介する出来事の数
+  include_observance: true  # 記念日も紹介する
+  min_year: 1600         # これより古い出来事は基本的に選ばない
+  max_chars: 60          # 1項目の最大文字数
+
+upload:
+  # private / unlisted / public
+  # ※ Google の審査を通していない API プロジェクトから投稿した動画は
+  #    強制的に「非公開」になります（README 参照）
+  privacy: public
+  category_id: 27        # 27=教育, 24=エンタメ, 22=ブログ
+  made_for_kids: false

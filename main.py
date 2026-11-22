@@ -6,6 +6,7 @@
   python main.py --source topics      # topics.yaml の雑学ネタで作る
   python main.py --date 2026-12-25    # 日付を指定
   python main.py --upload             # 作ったあと YouTube に投稿
+  python main.py --channel affiliate  # 別チャンネル（channels/affiliate/ の設定）で作る
 """
 from __future__ import annotations
 
@@ -18,24 +19,31 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
-from shorts import pipeline, sources, upload
+from shorts import affiliate, pipeline, sources, upload
 
 ROOT = Path(__file__).resolve().parent
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--channel", help="channels/<名前>/ の設定で作る（既定: リポジトリ直下の設定＝メインチャンネル）")
     ap.add_argument("--source", choices=["auto", "today", "topics"], help="ネタの取り方（既定: config.yaml）")
     ap.add_argument("--date", help="YYYY-MM-DD（既定: 日本時間の今日）")
     ap.add_argument("--topic-index", type=int, help="topics.yaml の何番目を使うか（0始まり）")
     ap.add_argument("--slot", type=int, default=0, help="1日に複数本の雑学を出すときの何本目か（0始まり）")
     ap.add_argument("--upload", action="store_true", help="YouTube にアップロードする")
     ap.add_argument("--allow-silent", action="store_true", help="音声合成できないとき無音で続行（動作確認用）")
+    ap.add_argument("--no-affiliate", action="store_true", help="説明欄にアフィリエイトリンクを入れない")
     ap.add_argument("--out", default="output", help="出力フォルダ")
     ap.add_argument("--wikitext-file", help="Wikipedia を取りに行かずにこのファイルを使う（動作確認用）")
     args = ap.parse_args()
 
-    cfg = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8")) or {}
+    # チャンネルごとの設定フォルダ（config.yaml / topics.yaml / affiliate.yaml）
+    cdir = ROOT / "channels" / args.channel if args.channel else ROOT
+    if not (cdir / "config.yaml").exists():
+        print(f"[error] {cdir / 'config.yaml'} がありません", file=sys.stderr)
+        return 2
+    cfg = yaml.safe_load((cdir / "config.yaml").read_text(encoding="utf-8")) or {}
     tz = ZoneInfo(cfg.get("timezone", "Asia/Tokyo"))
     date = dt.date.fromisoformat(args.date) if args.date else dt.datetime.now(tz).date()
     source = args.source or cfg.get("source", "auto")
@@ -44,12 +52,15 @@ def main() -> int:
         plan = sources.plan_today(date, cfg, Path(args.wikitext_file).read_text(encoding="utf-8"))
         source = "today"
     else:
-        plan = sources.make_plan(source, date, cfg, ROOT, args.topic_index, args.slot)
+        plan = sources.make_plan(source, date, cfg, cdir, args.topic_index, args.slot)
+    if not args.no_affiliate:
+        affiliate.apply(plan, affiliate.load(cdir))
     print(f"[plan] {plan.title}")
     for s in plan.scenes:
         print(f"   - [{s.label}] {s.narration}")
 
-    name = f"{date.isoformat()}_{source}{args.slot if source == 'topics' else ''}_{sources.slug(plan)}"
+    prefix = f"{args.channel}_" if args.channel else ""
+    name = f"{date.isoformat()}_{prefix}{source}{args.slot if source == 'topics' else ''}_{sources.slug(plan)}"
     out = Path(args.out) / f"{name}.mp4"
     os.chdir(ROOT)
     pipeline.build_video(plan, cfg, Path(args.out) / "work" / name, out, allow_silent=args.allow_silent)
