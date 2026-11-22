@@ -20,12 +20,16 @@ from .scene import FONT_CANDIDATES, SUB_FONT_CANDIDATES, NeonDriveScene, _font, 
 TW, TH = 1280, 720
 
 
-def _background(audio: Path, seed: int, hue: float = 0.0, t_offset: float = 1.5) -> Image.Image:
+def _background(audio: Path, seed: int, hue: float = 0.0, t_offset: float = 1.5, scene: str = "neon") -> Image.Image:
     f = analyze(audio)
     hits = np.where(f.drop >= 0.999)[0]
     i = int(hits[0] + f.fps * t_offset) if len(hits) else f.n // 2
     i = min(i, f.n - 1)
-    sc = NeonDriveScene(1920, 1080, f, title=" ", subtitle="", seed=seed)
+    if scene == "city":
+        from .scene_city import SkyCityScene
+        sc = SkyCityScene(1920, 1080, f, title=" ", subtitle="", seed=seed)
+    else:
+        sc = NeonDriveScene(1920, 1080, f, title=" ", subtitle="", seed=seed)
     sc.post.hue[:] = hue
     f.drop[:] = 0  # 揺れ・フラッシュは入れない
     img = sc.render(i)
@@ -160,11 +164,11 @@ def design_c(bg: Image.Image, title: str, genre: str, bpm: str) -> Image.Image:
     return img
 
 
-def make_thumbnails(audio: Path, title: str, out_prefix: Path, genre: str = "DARKSYNTH",
+def make_thumbnails(audio: Path, title: str, out_prefix: Path, genre: str = "DARKSYNTH", scene: str = "neon",
                     bpm: str = "140", seed: int = 7, hue: float = 0.0) -> list[Path]:
     paths = []
-    bg = _background(audio, seed, hue=hue)
-    bg_red = _background(audio, seed, hue=22)
+    bg = _background(audio, seed, hue=hue, scene=scene)
+    bg_red = _background(audio, seed, hue=22, scene=scene)
     for name, fn, b in (("a", design_a, bg), ("b", design_b, bg_red), ("c", design_c, bg)):
         p = Path(f"{out_prefix}_thumb_{name}.jpg")
         fn(b, title, genre, bpm).convert("RGB").save(p, quality=92)

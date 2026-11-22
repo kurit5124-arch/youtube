@@ -40,6 +40,8 @@ def main() -> int:
     ap.add_argument("--length", choices=["short", "long"],
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
+    ap.add_argument("--scene", choices=["city", "neon"],
+                    help="動く絵の種類 city=夜空と海辺の街・花火 / neon=夕日とグリッドと車（既定: future は city）")
     ap.add_argument("--image", type=Path, help="自分のイラストを動かす。省略するとプログラムで描く")
     ap.add_argument("--landscape", action="store_true", help="横型 1920x1080 にする（既定は縦型 1080x1920）")
     ap.add_argument("--fps", type=int, default=30)
@@ -75,7 +77,7 @@ def main() -> int:
     print("[2/3] 音を解析中…")
     feats = analyze(audio, fps=args.fps)
 
-    kind = "image" if args.image else "neon"
+    kind = "image" if args.image else (args.scene or ("city" if args.style == "future" else "neon"))
     opts = dict(title=args.title, subtitle=args.subtitle, seed=args.seed, hue=args.hue)
     if args.image:
         opts["image"] = args.image
@@ -89,7 +91,8 @@ def main() -> int:
     if not args.image:
         print("[+] サムネイルを作成中…（a/b/c の3種類）")
         bpm = f"{args.bpm or (140 if args.style in ('hard', 'future') else 128):g}"
-        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed, hue=args.hue)
+        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed, hue=args.hue,
+                        scene=kind)
 
     meta = {
         "title": f"{args.title} | {genre if args.style in ('edm', 'future') else genre.title()} Original Track",

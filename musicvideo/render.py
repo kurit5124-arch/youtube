@@ -11,6 +11,7 @@ import numpy as np
 
 from .analyze import Features
 from .scene import ImageScene, NeonDriveScene
+from .scene_city import SkyCityScene
 
 _scene = None
 
@@ -20,6 +21,8 @@ def _init(kind, W, H, feats, opts):
     cv2.setNumThreads(1)
     if kind == "image":
         _scene = ImageScene(W, H, feats, **opts)
+    elif kind == "city":
+        _scene = SkyCityScene(W, H, feats, **opts)
     else:
         _scene = NeonDriveScene(W, H, feats, **opts)
 
