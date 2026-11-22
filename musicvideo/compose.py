@@ -386,7 +386,7 @@ DEFAULT_BPM = {"hard": 140, "edm": 128, "synthwave": 128}
 
 def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "NEON DRIVE",
             length: str = "short", style: str = "hard", key: int = 0,
-            melody_seed: int | None = None) -> Path:
+            melody_seed: int | None = None, ai_song: dict | None = None) -> Path:
     """length="short" で約1分、"long" で約3分の曲を作る。
     style="hard" は速くて激しいダークシンセ、"synthwave" はゆったりめのシンセウェーブ。"""
     rng = np.random.default_rng(seed)
@@ -406,6 +406,11 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
         # メロディだけ別の乱数で作り直す（コード・ドラム・音色はそのまま）
         mrng = np.random.default_rng(melody_seed)
         melodies = [_hook(mrng, progs[0], style), _hook(mrng, progs[0], style), _hook(mrng, progs[1], style)]
+    if ai_song:
+        # 学習した AI が作ったコード進行（8小節）とメロディを使う
+        progs[0] = [(int(rt), q) for rt, q in ai_song["progression"]]
+        ai_mels = [[(float(p), float(ln), int(m)) for p, ln, m in mel] for mel in ai_song["melodies"]]
+        melodies = [ai_mels[0], ai_mels[1 % len(ai_mels)], ai_mels[2 % len(ai_mels)] if len(ai_mels) > 2 else ai_mels[0]]
     # key: 半音いくつ上げ下げするか（-3 なら Aマイナー → F#マイナー）
     progs = [[(r + key, k) for r, k in p] for p in progs]
     melodies = [[(pos, ln, m + key) for pos, ln, m in mel] for mel in melodies]
@@ -452,7 +457,7 @@ def compose(out_path: Path, seed: int = 7, bpm: float | None = None, title: str 
         melody = melodies[sec.mel]
         for b in range(sec.bars):
             t0 = bar_i * bar
-            root, kind = prog[b % 4]
+            root, kind = prog[b % len(prog)]
             tones = [root + i for i in TRIAD[kind]]
             L = sec.layers
             prog_in_sec = b / sec.bars

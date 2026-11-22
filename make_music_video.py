@@ -31,6 +31,7 @@ def main() -> int:
     ap.add_argument("--title", help="画面に出す曲名（既定: hard=OVERDRIVE, edm=SKYLINE, synthwave=NEON DRIVE）")
     ap.add_argument("--subtitle", help="曲名の下の小さい文字")
     ap.add_argument("--seed", type=int, default=7, help="作曲と景色のパターン（数字を変えると別の曲に）")
+    ap.add_argument("--ai-song", type=Path, help="学習した AI が作ったメロディとコード（ml/generate.py の出力 json）を使う")
     ap.add_argument("--melody-seed", type=int, help="メロディだけ変える（コード・音色・映像はそのまま）")
     ap.add_argument("--key", type=int, default=0, help="曲の高さを半音いくつ上下するか（例: -3 で F#マイナー）")
     ap.add_argument("--hue", type=float, default=0.0, help="映像の色味を回す角度（例: -40 で青っぽく、20 で赤っぽく）")
@@ -62,7 +63,8 @@ def main() -> int:
         length = args.length or ("long" if args.landscape else "short")
         print(f"[1/3] 作曲中…（{args.style}, seed={args.seed}, {length}）")
         compose(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length, style=args.style, key=args.key,
-                melody_seed=args.melody_seed)
+                melody_seed=args.melody_seed,
+                ai_song=json.loads(args.ai_song.read_text(encoding="utf-8")) if args.ai_song else None)
         print(f"      → {audio}")
 
     print("[2/3] 音を解析中…")
