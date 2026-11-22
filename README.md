@@ -32,13 +32,11 @@ python main.py --date 2026-12-25   # 日付を指定
 
 ## 2. 毎日自動で動かす（GitHub Actions）
 
-このリポジトリを GitHub に置くだけで、`.github/workflows/daily-short.yml` が毎日3本の動画を作って投稿します。
+このリポジトリを GitHub に置くだけで、`.github/workflows/daily-short.yml` が
+**毎朝7時ごろ「今日は何の日」クイズ**（記念日の説明＋何年？3択クイズ3問）を作って投稿します。
 
-| 時間（日本時間） | 内容 |
-|---|---|
-| 朝 7時ごろ | 「今日は何の日」クイズ（記念日の説明＋何年？3択クイズ3問） |
-| 夜 19時ごろ | 雑学（`topics.yaml` から） |
-| 夜 21時ごろ | 雑学（`topics.yaml` の別のネタ） |
+雑学（`topics.yaml`）は YouTube には投稿しません。`python scripts/print_trivia.py` でその日の2本を文章で出せます。
+手動で動画にしたいときは Actions の Run workflow で source を `topics` にしてください。
 
 時刻は `cron` の行で変えられます（UTC で書きます）。
 
