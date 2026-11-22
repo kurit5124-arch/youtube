@@ -26,8 +26,11 @@ def plan_story(st: dict, date: dt.date) -> VideoPlan:
                                 choices=[f"A {sc['choices'][0]}", f"B {sc['choices'][1]}"],
                                 narration=_s(sc["narration"])))
         else:
-            scenes.append(Scene(kind="hook" if n == 0 else "case", label=sc.get("label", ""), text=sc.get("text", ""),
-                                narration=_s(sc["narration"]), art=sc.get("art", {})))
+            # 字幕は読み上げとまったく同じ文にする（captions: summary のときだけ text の要約を出す）
+            narr = _s(sc["narration"])
+            text = sc.get("text", "") if st.get("captions") == "summary" else narr
+            scenes.append(Scene(kind="hook" if n == 0 else "case", label=sc.get("label", ""), text=text,
+                                narration=narr, art=sc.get("art", {})))
     tags = st.get("tags", ["shorts"])
     return VideoPlan(header=st.get("header", st["title"]), subheader=st.get("subheader", ""), scenes=scenes,
                      title=st.get("youtube_title", st["title"]), description=st.get("description", ""),

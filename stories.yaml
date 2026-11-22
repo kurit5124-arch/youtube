@@ -34,10 +34,10 @@
       art:
         bg: street
         big: 9500万円！？
-        big_y: 860
+        big_y: 1010
         cast:
-          - {who: mother, expr: shock, x: 0.25, fx: "❗"}
-          - {who: man, expr: shock, x: 0.75, flip: true, fx: "💦"}
+          - {who: mother, expr: shock, x: 0.25, scale: 0.9, y: 1830, fx: "❗"}
+          - {who: man, expr: shock, x: 0.75, scale: 0.9, y: 1830, flip: true, fx: "💦"}
     - label: 2008年 神戸市
       text: 坂道を下っていた小学5年生の自転車が、歩いていた62歳の女性とぶつかった
       narration: 2008年、神戸市。坂道を自転車で下っていた小学5年生の男の子が、歩いていた62歳の女性とぶつかりました。

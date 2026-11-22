@@ -137,6 +137,25 @@ def _bubble(d: ImageDraw.ImageDraw, box, tail_to=None, fill=(255, 255, 255), out
         d.line([(mx - 37, base_y), (mx + 37, base_y)], fill=fill, width=12)
 
 
+_PUNCT = set("、。，．！？!?「」『』（）()・…ー〜 　\n")
+_SMALL = set("ゃゅょっぁぃぅぇぉャュョッァィゥェォ")
+
+
+def _read_weight(ch: str) -> float:
+    """1 文字を読み上げるのにかかるおおよその長さ（かな 1 文字 = 1）。"""
+    if ch in _PUNCT:
+        return 0.0
+    if ch in _SMALL:
+        return 0.5
+    if "\u4e00" <= ch <= "\u9fff" or ch == "々":
+        return 1.8   # 漢字は 2 音くらい
+    if ch.isdigit():
+        return 1.3
+    if ch.isascii():
+        return 1.2
+    return 1.0
+
+
 class _TextBlock:
     """吹き出しの中の文字（1 文字ずつ表示）。"""
 
@@ -150,6 +169,14 @@ class _TextBlock:
                 break
             size -= 4
         self.total = sum(len(s) for s in self.lines)
+        w = np.cumsum([_read_weight(c) for c in "".join(self.lines)]) if self.total else np.zeros(0)
+        self._cum = w / w[-1] if self.total and w[-1] > 0 else np.linspace(0, 1, self.total)
+
+    def shown_at(self, progress: float) -> int:
+        """読み上げの進み具合（0〜1）に合わせて、何文字目まで出すか。"""
+        if progress >= 0.999:
+            return self.total
+        return int(np.searchsorted(self._cum, progress, side="right"))
 
     @property
     def height(self) -> int:
@@ -218,8 +245,15 @@ def character(cfg: dict) -> Character | None:
 
 # ---------------------------------------------------------------- 1 場面ぶんの描画
 class SceneAnimator:
+    def _typed(self, b: "_TextBlock", t: float, delay: float = 0.15) -> int:
+        if self.progress is not None:
+            # 字幕は声より少しだけ先に出すと読みやすい（0.15 秒）
+            i = min(int((t + 0.15) * FPS), len(self.progress) - 1)
+            return b.shown_at(float(self.progress[i]))
+        return int(b.total * min(1.0, max(0.0, (t - delay) / self.type_until)))
+
     def __init__(self, plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: str, dur: float,
-                 narrator: Character | None = None):
+                 narrator: Character | None = None, env=None):
         self.plan, self.s, self.idx, self.total, self.fp, self.dur = plan, scene, idx, total, font_path, dur
         self.narrator = narrator
         rng = random.Random(plan.seed)
@@ -238,13 +272,18 @@ class SceneAnimator:
             self.block = None
         else:
             self.block = _TextBlock(text, font_path, 800, 320 if narrator else 380, start=76)
-        self.type_until = max(0.6, (dur - 0.4) * 0.75)  # この秒数で全文が出る
+        self.type_until = max(0.6, (dur - 0.4) * 0.75)  # 声の情報が無いとき、この秒数で全文が出る
+        self.progress = None
+        if env is not None and len(env):
+            voiced = (np.asarray(env) > 0.1).astype(float)
+            if voiced.sum() > 0:
+                self.progress = np.cumsum(voiced) / voiced.sum()
         self.art = scene.art or {}
         if self.art:
             self.bg_art, self.front_art = illust.background(self.art.get("bg", "home"), plan.seed)
             self.cast = self.art.get("cast", [])
             self.fx = {k: sticker(c["fx"], 120) for k, c in enumerate(self.cast) if c.get("fx")}
-            self.block = _TextBlock(scene.text.strip("「」"), font_path, 820, 300, start=70) if scene.text else None
+            self.block = _TextBlock(scene.text.strip("「」"), font_path, 840, 320, start=66) if scene.text else None
 
     def _header(self, d):
         _outlined(d, (W // 2, 250), self.plan.header, self.f(96), fill=(255, 255, 255), width=12)
@@ -315,7 +354,7 @@ class SceneAnimator:
                 if speaker is not None and speaker < len(self.cast):
                     tail = (self.cast[speaker].get("x", 0.5) * W, box[3] + 90)
                 _bubble(ld, box, tail)
-                shown = int(b.total * min(1.0, max(0.0, (t - 0.15) / self.type_until)))
+                shown = self._typed(b, t)
                 b.draw(ld, W / 2, top + 40, shown)
                 if abs(k - 1) < 1e-3:
                     img.alpha_composite(layer)
@@ -418,7 +457,7 @@ class SceneAnimator:
         layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         ld = ImageDraw.Draw(layer)
         _bubble(ld, box, tail)
-        shown = int(b.total * min(1.0, max(0.0, (t - 0.2) / self.type_until)))
+        shown = self._typed(b, t, 0.2)
         b.draw(ld, W / 2, box[1] + 45, shown)
         if abs(k - 1) < 1e-3:
             img.alpha_composite(layer)
@@ -490,7 +529,7 @@ def render_segment(plan: VideoPlan, scene: Scene, idx: int, total: int, font_pat
                    audio: Path, dur: float, out: Path, cfg: dict | None = None) -> None:
     frames = max(1, int(round(dur * FPS)))
     env = envelope(audio, frames)
-    anim = SceneAnimator(plan, scene, idx, total, font_path, dur, character(cfg or {}))
+    anim = SceneAnimator(plan, scene, idx, total, font_path, dur, character(cfg or {}), env)
     proc = subprocess.Popen(
         ["ffmpeg", "-y", "-loglevel", "error",
          "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
