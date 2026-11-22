@@ -247,6 +247,14 @@ def adapt(notes, chords, shift=0, lo=55, hi=84):
     return out
 
 
+def _check_in_key(notes, key):
+    """メロディにキーの外の音（半音ずれた音）が混ざっていないか確かめる"""
+    scale = {(x + key) % 12 for x in (0, 2, 4, 5, 7, 9, 11)}
+    bad = [(p, m) for p, _, m in notes if m % 12 not in scale]
+    if bad:
+        raise ValueError(f"キーの外の音が混ざっています: {bad}")
+
+
 def model_score(notes, chords, model=None):
     """学習した AI に、このメロディがどれだけ「本物の EDM らしいか」を採点させる（平均の対数確率）"""
     if model is None:
@@ -328,8 +336,11 @@ def compose_future(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     pump = np.ones(N)
 
     hook, used_ai = choose_hook(seed, DROP)
+    # Aメロ用：移調する前（C メジャーのまま）にコードへ合わせ直してから、まとめて移調する
+    verse_mel = adapt([(p, ln, m - 12) for p, ln, m in hook if p < 16], VERSE, lo=52 - key, hi=72 - key)
     hook = [(p, ln, m + key) for p, ln, m in hook]
-    verse_mel = adapt([(p, ln, m - 12) for p, ln, m in hook if p < 16], [(r + key, q) for r, q in VERSE], lo=52, hi=72)
+    verse_mel = [(p, ln, m + key) for p, ln, m in verse_mel]
+    _check_in_key(hook + verse_mel, key)
 
     def put(name, sig, t, gain=1.0, pan=0.0, jitter=0.0, send=0.0):
         if jitter:
