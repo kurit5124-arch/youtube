@@ -23,6 +23,23 @@ PALETTES = [
     ((17, 24, 39), (55, 65, 81), (244, 114, 182)),
 ]
 
+# 特別な見た目（topics.yaml の style: で指定）
+#   noir = 犯人の自白風（黒〜暗い赤の背景、黒いカードに白い文字、赤いラベル）
+STYLES = {
+    "noir": {"palette": ((8, 8, 12), (70, 6, 12), (220, 38, 38)), "card": (16, 16, 20, 238),
+             "ink": (245, 245, 245), "sub_ink": (190, 190, 200), "label_ink": (255, 255, 255), "bg_alpha": 0.18},
+}
+DEFAULT_STYLE = {"card": (255, 255, 255, 245), "ink": (25, 25, 35), "sub_ink": (70, 70, 85),
+                 "label_ink": (20, 20, 30), "bg_alpha": 0.38}
+
+
+def style_of(plan: VideoPlan) -> dict:
+    st = dict(DEFAULT_STYLE)
+    st.update(STYLES.get(plan.style, {}))
+    if "palette" not in st:
+        st["palette"] = PALETTES[random.Random(plan.seed).randrange(len(PALETTES))]
+    return st
+
 FONT_CANDIDATES = [
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Black.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
@@ -91,7 +108,10 @@ def _shadow_text(draw, xy, text, font, fill, anchor="mm", shadow=(0, 0, 0, 160),
 
 def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: str, out: Path) -> None:
     rng = random.Random(plan.seed)
-    top, bottom, accent = PALETTES[rng.randrange(len(PALETTES))]
+    rng.randrange(len(PALETTES))  # 飾りの配置を今までと同じにするため1回進める
+    st = style_of(plan)
+    top, bottom, accent = st["palette"]
+    ink = st["ink"]
     img = _gradient(top, bottom).convert("RGBA")
 
     # 背景の飾り（ぼかした円）
@@ -108,7 +128,7 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
     if bg:
         spots = [(95, 110, 170), (985, 120, 180), (150, 1620, 300), (930, 1560, 260), (540, 1830, 220)]
         for k, (x, y, size) in enumerate(spots):
-            em = illust.image(bg[k % len(bg)], size, alpha=0.38, angle=rng.uniform(-18, 18))
+            em = illust.image(bg[k % len(bg)], size, alpha=st["bg_alpha"], angle=rng.uniform(-18, 18))
             if em:
                 img.alpha_composite(em, (int(x - em.width / 2), int(y - em.height / 2)))
     d = ImageDraw.Draw(img)
@@ -127,13 +147,13 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
     ImageDraw.Draw(card).rounded_rectangle([cx0 + 12, cy0 + 16, cx1 + 12, cy1 + 16], radius=48, fill=(0, 0, 0, 90))
     img = Image.alpha_composite(img, card.filter(ImageFilter.GaussianBlur(14)))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([cx0, cy0, cx1, cy1], radius=48, fill=(255, 255, 255, 245))
+    d.rounded_rectangle([cx0, cy0, cx1, cy1], radius=48, fill=st["card"])
 
     if scene.label:
         lf = ImageFont.truetype(font_path, 60)
         lw = lf.getlength(scene.label) + 70
         d.rounded_rectangle([W / 2 - lw / 2, cy0 - 50, W / 2 + lw / 2, cy0 + 50], radius=50, fill=accent)
-        d.text((W // 2, cy0), scene.label, font=lf, fill=(20, 20, 30), anchor="mm")
+        d.text((W // 2, cy0), scene.label, font=lf, fill=st["label_ink"], anchor="mm")
 
     big = scene.kind in ("hook", "outro")
     if scene.choices:
@@ -141,7 +161,7 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 100, 270, start=68, minimum=36)
         y = cy0 + 75 + (270 - len(lines) * lh) / 2 + lh / 2
         for line in lines:
-            d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
+            d.text((W // 2, y), line, font=font, fill=ink, anchor="mm")
             y += lh
         if scene.emoji:
             em = illust.image(scene.emoji, 150, angle=-10)
@@ -164,7 +184,7 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(160, 160, 170), anchor="lm")
             else:
                 d.rounded_rectangle(box, radius=56, fill=(243, 244, 246), outline=accent, width=6)
-                d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(25, 25, 35), anchor="lm")
+                d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=ink, anchor="lm")
     else:
         top_y, bottom_y = cy0 + 90, cy1 - 90
         if scene.emoji:
@@ -182,18 +202,18 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
             block = len(hl) * hlh + 30 + len(sl) * slh
             y = (top_y + bottom_y) / 2 - block / 2 + hlh / 2
             for line in hl:
-                d.text((W // 2, y), line, font=hf, fill=(25, 25, 35), anchor="mm")
+                d.text((W // 2, y), line, font=hf, fill=ink, anchor="mm")
                 y += hlh
             y += 30 - hlh / 2 + slh / 2
             for line in sl:
-                d.text((W // 2, y), line, font=sf, fill=(70, 70, 85), anchor="mm")
+                d.text((W // 2, y), line, font=sf, fill=st["sub_ink"], anchor="mm")
                 y += slh
         else:
             font, lines, lh = fit_text(scene.text, font_path, cx1 - cx0 - 120, bottom_y - top_y,
                                        start=118 if big else 84)
             y = (top_y + bottom_y) / 2 - (len(lines) - 1) * lh / 2
             for line in lines:
-                d.text((W // 2, y), line, font=font, fill=(25, 25, 35), anchor="mm")
+                d.text((W // 2, y), line, font=font, fill=ink, anchor="mm")
                 y += lh
 
     if scene.countdown:
@@ -251,4 +271,4 @@ def finalize(segments: list[Path], total: float, out: Path, bgm: Path | None, bg
 
 
 def accent_of(plan: VideoPlan):
-    return PALETTES[random.Random(plan.seed).randrange(len(PALETTES))][2]
+    return style_of(plan)["palette"][2]

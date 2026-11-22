@@ -423,3 +423,33 @@
     - text: 陸上で一番大きな動物
       narration: アフリカゾウは、今いる陸の動物の中で一番大きな動物です。
   tags: [ゾウ, 雑学, 動物, shorts]
+
+# ----- 犯人の自白シリーズ（低い声・暗い画面）-----
+# 伸びた「猫の意外な雑学」と同じ「つかみ＋3つ＋締め」の形で、犯人が白状するように語る
+- title: 猫の自白
+  header: 犯人の自白
+  label: 自白
+  point_label: 自白その
+  emoji: 🐈‍⬛
+  style: noir
+  voice: {name: ja-JP-KeitaNeural, rate: "-8%", pitch: "-22Hz", filter: "aecho=0.8:0.6:45:0.22,lowpass=f=6000"}
+  bgm: assets/bgm_special/suspense.mp3
+  bgm_volume: 0.35
+  hook: ……もう隠しても無駄か。犯人は、俺だ。猫の秘密を三つ、白状しよう。
+  hook_text: "犯人は…\n猫だった"
+  points:
+    - text: "「ニャー」は\n人間専用の声"
+      narration: あの「ニャー」という声……実はな、大人の猫同士では、ほとんど使わない。お前たち人間を動かすための声なんだよ。
+      emoji: 🗣️
+    - text: "ゴロゴロ＝ご機嫌\nとは限らない"
+      narration: ゴロゴロと喉を鳴らすのは、機嫌がいいときだけじゃない。具合が悪いときや、不安なときにも鳴らすことがある。
+      emoji: 😿
+    - text: "舌のトゲは\nブラシ代わり"
+      narration: 俺の舌がザラザラしているのは、細かいトゲが並んでいるからだ。これで毛をとかし、汚れを落としている。……毎日、念入りにな。
+      emoji: 👅
+  outro: ……これで全部だ。もっと知りたければ、チャンネル登録しておけ。次は、誰が白状するかな。
+  outro_text: "次の犯人は…\nチャンネル登録で"
+  outro_label: 取り調べ終了
+  outro_emoji: 🔍
+  youtube_title: 【自白】猫が人間に隠してきた3つの秘密 #shorts
+  tags: [猫, 雑学, 動物, 自白, 犯人, shorts]

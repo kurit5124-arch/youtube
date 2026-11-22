@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import subprocess
 from pathlib import Path
 
@@ -17,6 +18,12 @@ def duration(path: Path) -> float:
 async def _edge(text: str, out: Path, voice: str, rate: str, pitch: str) -> None:
     import edge_tts
 
+    ca = os.environ.get("SSL_CERT_FILE")
+    if ca and os.path.exists(ca):  # 社内プロキシなど独自の証明書がある環境向け
+        import ssl
+
+        import edge_tts.communicate as comm
+        comm._SSL_CTX = ssl.create_default_context(cafile=ca)
     await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(str(out))
 
 
@@ -44,6 +51,11 @@ def synthesize(text: str, out: Path, cfg: dict, allow_silent: bool = False) -> f
                     raise
         else:
             raise RuntimeError("音声が空でした")
+        if vc.get("filter"):  # 声の加工（例: 犯人風に少し響かせる）
+            tmp = out.with_name(out.stem + "_f.mp3")
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(out), "-af", vc["filter"],
+                            "-c:a", "libmp3lame", str(tmp)], check=True)
+            tmp.replace(out)
     except Exception as e:  # noqa: BLE001
         if not allow_silent:
             raise RuntimeError(f"音声合成に失敗しました: {e}") from e

@@ -10,6 +10,8 @@ from .models import VideoPlan
 
 def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_silent: bool = False) -> Path:
     workdir.mkdir(parents=True, exist_ok=True)
+    if plan.voice:  # ネタごとの声（例: 犯人風の低い声）
+        cfg = {**cfg, "voice": {**cfg.get("voice", {}), **plan.voice}}
     font = render.find_font(cfg.get("font"))
     max_len = plan.max_seconds or float(cfg.get("max_seconds", 58))
     gap = float(cfg.get("scene_gap", 0.35))
@@ -54,8 +56,11 @@ def build_video(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_sile
     bgm_dir = Path(cfg.get("bgm_dir", "assets/bgm"))
     bgms = sorted(p for p in bgm_dir.glob("*") if p.suffix.lower() in (".mp3", ".m4a", ".wav", ".ogg")) if bgm_dir.exists() else []
     bgm = bgms[plan.seed % len(bgms)] if bgms else None
+    if plan.bgm and Path(plan.bgm).exists():
+        bgm = Path(plan.bgm)
+    vol = plan.bgm_volume if plan.bgm_volume is not None else float(cfg.get("bgm_volume", 0.12))
     out.parent.mkdir(parents=True, exist_ok=True)
-    render.finalize(segs, total, out, bgm, float(cfg.get("bgm_volume", 0.12)), render.accent_of(plan))
+    render.finalize(segs, total, out, bgm, vol, render.accent_of(plan))
 
     meta = {"title": plan.title, "description": plan.description, "tags": plan.tags,
             "duration": round(total, 2), "scenes": [s.__dict__ for s in plan.scenes]}

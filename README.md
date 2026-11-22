@@ -135,6 +135,8 @@ python scripts/build_affiliate_site.py              # まとめページを site
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
 - **`topics.yaml`** … 雑学ネタ帳。書き足すほどネタが増えます
+- **犯人の自白風（低い声・暗い画面）**… `topics.yaml` のネタに `style: noir`・`voice:`（声・高さ・加工）・`bgm:` を書くと、そのネタだけ見た目と声が変わります。例は末尾の「猫の自白」。
+  `python main.py --source topics --topic-index 31` で作れます（不穏なBGMは `python scripts/make_suspense_bgm.py` で作り直せます）
 - **`assets/bgm/`** … BGM。プログラムで作曲したオリジナル曲が3曲入っていて、日替わりで使われます。`python scripts/make_bgm.py` で作り直せます。好きな曲（著作権フリーのもの）の mp3 を置けば追加できます
 - **`shorts/render.py`** … 色・レイアウト（`PALETTES` で配色を追加）
 - **`shorts/illust.py`** … 背景イラスト（Noto Color Emoji）。言葉とイラストの対応表 `KEYWORDS` に追加できます

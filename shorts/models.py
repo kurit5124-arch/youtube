@@ -35,3 +35,7 @@ class VideoPlan:
     emojis: list[str] = field(default_factory=list)  # 背景に散らすイラスト
     max_seconds: float | None = None  # この動画の最大秒数（None なら config の max_seconds）
     products: list[dict] = field(default_factory=list)  # 紹介する商品（affiliate 用。topics.yaml の products:）
+    voice: dict = field(default_factory=dict)  # この動画だけ声を変える（config の voice: に上書き）
+    style: str = ""              # 見た目（"" = いつもの / "noir" = 犯人の自白風）
+    bgm: str = ""                # この動画だけ使う BGM ファイル（空なら bgm_dir から日替わり）
+    bgm_volume: float | None = None
