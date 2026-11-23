@@ -75,7 +75,7 @@ def main() -> int:
         print(f"[1/3] 作曲中…（{args.style}, seed={args.seed}, {length}）")
         if args.style == "walker":
             compose_walker(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length,
-                           key=-2 if args.key is None else args.key, voice=args.voice)
+                           key=-6 if args.key is None else args.key, voice=args.voice)
         elif args.style == "future":
             compose_future(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length,
                            key=-4 if args.key is None else args.key)

@@ -346,10 +346,24 @@ def sing_phrase(phrase, beat, voice, transpose=0, vib_depth=0.17, seed=0):
     sing[max(0, last_note_end - 12):] = False  # 最後の自然な消え方はそのまま
     if sing.any():
         tgt = np.median(env[sing])
-        g = np.where(sing, np.clip(tgt / env, 0.6, 4.0), 1.0)
+        # 大きすぎる所（フレーズの出だしなど）もしっかり下げる
+        g = np.where(sing, np.clip(tgt / env, 0.2, 4.0), 1.0)
+        # 歌い出しの直前（子音・息）も、出だしの大きさに合わせて下げる
+        first = np.argmax(sing)
+        pre_lo = max(0, first - 15)
+        g[pre_lo:first] = np.minimum(1.0, g[first])
         g = np.convolve(np.pad(g, 3, mode="edge"), np.hanning(7) / np.hanning(7).sum(), mode="valid")
         gs = np.interp(np.arange(len(y)), np.arange(nb_) * hop + hop / 2, g)
         y = y * gs
+        # 仕上げ：子音の「カッ」などの短いトゲも、まわりより +3dB 以上は出さない（5ミリ秒ごと）
+        h2 = int(SR * 0.005)
+        n2 = len(y) // h2
+        e2 = np.sqrt(np.mean(y[:n2 * h2].reshape(n2, h2) ** 2, axis=1)) + 1e-7
+        lim = tgt * 1.41
+        g2 = np.minimum(1.0, lim / e2)
+        g2 = np.minimum.reduce([g2, np.roll(g2, 1), np.roll(g2, -1)])  # 少し先読み
+        g2 = np.convolve(g2, np.ones(3) / 3, mode="same")
+        y = y * np.interp(np.arange(len(y)), np.arange(n2) * h2 + h2 / 2, g2)
         # フレーズの大きさは「歌っている所の平均」でそろえる（一瞬の大きな音に引っぱられない）
         env2 = np.sqrt(np.mean(y[:nb_ * hop].reshape(nb_, hop) ** 2, axis=1))
         y *= 0.16 / (np.median(env2[sing]) + 1e-9)

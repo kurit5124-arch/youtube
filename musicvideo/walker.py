@@ -112,7 +112,7 @@ SECTIONS = [("intro", 4), ("verse", 8), ("build", 4), ("chorus", 8), ("drop", 8)
 
 
 def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "SNOWLIGHT",
-                   key: int = -2, length: str = "long", voice: str = "en-US-JennyNeural",
+                   key: int = -6, length: str = "long", voice: str = "en-US-JennyNeural",
                    stems: Path | None = None) -> Path:
     bpm = bpm or 90
     rng = np.random.default_rng(seed)
@@ -263,13 +263,13 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     print("  ボーカルを合成中…")
     for st, lines, kind in vocal_parts:
         g = 0.8 if kind == "verse" else 1.3
-        for t, seg in render_lyrics(lines, beat, voice=voice, transpose=key):
+        for t, seg in render_lyrics(lines, beat, voice=voice, transpose=key, vib_depth=0.05):
             # 歌の合間はこだま（ディレイ）と残響でうめる
             put("vox", seg, st + t, g, send=0.5, dly=0.45 if kind != "verse" else 0.35)
         if kind != "verse":  # サビは別の歌い手の声を左右に重ねて、自然なコーラスに
             others = [v for v in ("en-US-AriaNeural", "en-GB-SoniaNeural", "en-US-JennyNeural") if v != voice][:2]
             for v2, pan, sd in ((others[0], -0.55, 11), (others[1], 0.55, 23)):
-                for t, seg in render_lyrics(lines, beat, voice=v2, transpose=key, vib_depth=0.12, seed=sd):
+                for t, seg in render_lyrics(lines, beat, voice=v2, transpose=key, vib_depth=0.04, seed=sd):
                     put("vox", seg, st + t, g * 0.38, pan=pan, send=0.35)
         if kind == "chorus2":  # 2回目のサビは3度下でハモる
             harm = [(w, [(p, ln, _third_below(m)) for p, ln, m in ns]) for w, ns in lines]
