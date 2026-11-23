@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -68,6 +70,35 @@ def split_sentences(text: str) -> list[str]:
     return parts or [text]
 
 
+# ---------------------------------------------------------------- 3D
+SIM3D = Path(__file__).resolve().parent / "sim3d"
+
+
+def prerender_3d(timeline: list[dict], total: float, workdir: Path) -> None:
+    """3D場面（type: sim3d）を、その場面の長さぶん先に書き出す（同じ内容なら使い回す）。"""
+    starts = sorted({seg["shot_start"] for seg in timeline if seg["shot"]})
+    for seg in timeline:
+        sh = seg["shot"]
+        if not sh or sh.get("type") != "sim3d" or sh.get("_frames"):
+            continue
+        later = [x for x in starts if x > seg["shot_start"]]
+        dur = (later[0] if later else total) - seg["shot_start"] + 0.3
+        params = {k: v for k, v in sh.items() if k not in ("type", "scene", "text", "big", "sub", "count",
+                                                            "count_secs", "size", "_frames")}
+        code = hashlib.sha1((SIM3D / "scenes.js").read_bytes()).hexdigest()  # 3Dの絵を直したら作り直す
+        key = hashlib.sha1(json.dumps([sh["scene"], params, round(dur, 2), code], sort_keys=True).encode()).hexdigest()[:12]
+        out = workdir / f"sim3d_{sh['scene']}_{key}"
+        n = max(1, round(dur * FPS))
+        if not (out.exists() and len(list(out.glob("*.jpg"))) >= n):
+            env = dict(os.environ)
+            if "NODE_PATH" not in env:
+                env["NODE_PATH"] = subprocess.run(["npm", "root", "-g"], capture_output=True, text=True).stdout.strip()
+            print(f"[3d] {sh['scene']} を {dur:.1f}秒ぶん書き出します")
+            subprocess.run(["node", str(SIM3D / "render.js"), sh["scene"], json.dumps(params), f"{dur:.3f}",
+                            str(FPS), str(out), str(W), str(H)], check=True, env=env)
+        sh["_frames"] = sorted(str(p) for p in out.glob("*.jpg"))
+
+
 # ---------------------------------------------------------------- 本体
 def build(ep_path: Path, out: Path, workdir: Path, preview: tuple[float, float] | None = None) -> Path:
     ep = yaml.safe_load(ep_path.read_text(encoding="utf-8"))
@@ -93,6 +124,7 @@ def build(ep_path: Path, out: Path, workdir: Path, preview: tuple[float, float] 
         t += dur
     total = t + float(ep.get("tail", 1.2))
     print(f"[moshimo] {name}: {len(beats)}行 / {total / 60:.1f}分")
+    prerender_3d(timeline, total, workdir)
 
     # 2) 音（声＋効果音）
     track = np.zeros(int(total * SR) + SR, dtype=np.float32)

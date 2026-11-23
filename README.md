@@ -172,6 +172,11 @@ python make_moshimo.py moshimo/episodes/ep01_nemuranai.yaml --preview 0 40  # 0�
 - **自分の声** … `voice/ep01_nemuranai/01.mp3`, `02.mp3` …（番号＝`beats` の順番、1行1ファイル）を置くと、その行は録音を使います。
   置いていない行は音声合成の仮の声です。動画の長さ・アニメの時間は声の長さに自動で合います
 - 字幕・左上のメーター（起きてから○時間）・効果音・BGM は自動で入ります
+- **3Dシミュレーション**（`shot: {type: sim3d, scene: ...}`）… three.js で描いた3Dの場面を1コマずつ書き出して入れます
+  - `earth`：自転する地球（昼と夜・夜側の街の明かり）。`hours` 時間ぶん回る（264なら11回転）
+  - `room`：眠らない人の部屋のタイムラプス。窓の外が昼→夜、時計が回る。`nod: true` で居眠りのカクッ
+  - `brain`：3Dの脳。`mode: clean`（老廃物が流れ出る）/ `dirty`（たまっていく）
+  - 必要なもの：Node.js と Playwright（Chromium）。1コマ約0.5秒なので、10秒の3D場面で2〜3分かかります。一度作ったものは使い回します
 
 ## カスタマイズ
 
@@ -196,7 +201,7 @@ config.yaml / topics.yaml   設定とネタ帳
 polls.yaml / poll_state.json  多数決のお題帳と、前回の動画・結果の記録
 shorts/poll.py              多数決（コメント集計・台本作り）
 make_moshimo.py             もしもシリーズの動画を作る入口
-moshimo/                    もしもシリーズのアニメーション（anim.py 絵 / shots.py 場面 / build.py 組み立て / episodes/ 各話）
+moshimo/                    もしもシリーズのアニメーション（anim.py 絵 / shots.py 場面 / build.py 組み立て / episodes/ 各話 / sim3d/ 3D）
 daihon/                     もしもシリーズの台本とシリーズの決まりごと
 .github/workflows/daily-poll.yml  多数決の動画作成（手動実行・投稿なし）
 shorts/sources.py           ネタ集め・台本作り

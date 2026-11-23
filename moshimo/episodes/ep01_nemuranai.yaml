@@ -20,7 +20,7 @@ beats:
     shot: {type: mascot, face: dizzy, icons: ["👻", "👁️", "🌀"]}
     fx: [{type: glitch, strength: 0.8}]
   - say: 今日は、人間が眠らないと体に何が起きるのかを、1日ずつ見ていきます。
-    shot: {type: clock, speed: 3, text: "1日ずつ見ていく"}
+    shot: {type: sim3d, scene: earth, hours: 72, start_hour: 6, text: "1日ずつ見ていく"}
   - say: これは、ただの想像ではありません。世界には本当に、11日間眠らなかった人がいます。
     shot: {type: big, text: "11日間", sub: "眠らなかった人が、本当にいる", emoji: "🕵️"}
   - say: その人がどうなったのかは、最後に話します。
@@ -31,7 +31,7 @@ beats:
     shot: {type: chapter, text: "1日目", sub: "起きてから 17時間", emoji: "🌙"}
     hud: 17時間
   - say: 朝7時に起きたとします。夜の12時で、起きてから17時間です。
-    shot: {type: clock, speed: 1.2, text: "朝7時 → 夜12時"}
+    shot: {type: sim3d, scene: room, start_hour: 7, hours: 17, text: "朝7時 → 夜12時"}
   - say: ある研究では、起きてから17〜19時間たつと、集中力や反応の速さが、お酒を飲んだときと同じくらいまで下がるとされています。
     shot:
       type: equal
@@ -56,8 +56,8 @@ beats:
   - say: ここから、自分では気づかない、こわいことが起きはじめます。それが、マイクロスリープ。
     shot: {type: big, text: "マイクロスリープ", size: 150, sub: "数秒だけの居眠り", emoji: "💤"}
   - say: 目は開いているのに、脳が数秒だけ、眠ってしまう現象です。
-    shot: {type: mascot, face: tired, icons: ["🧠", "💤"]}
-    fx: [{type: blackout, at: 1.6, dur: 1.2}]
+    shot: {type: sim3d, scene: room, start_hour: 26, hours: 1.5, nod: true, text: "目は開いているのに…"}
+    fx: [{type: blackout, at: 2.2, dur: 1.0}]
   - say: 本人は寝ていないと思っていても、その数秒、何も見えていないし、何も聞こえていません。
     shot: {type: icons, items: [{emoji: "🙈", text: "見えない"}, {emoji: "🙉", text: "聞こえない"}], text: "その数秒は…"}
   - say: さらに、気持ちも不安定になります。寝不足の脳は、イヤなことに強く反応しやすくなるんです。
@@ -85,10 +85,10 @@ beats:
   - say: では、なぜ眠らないと、こんなことになるのでしょうか。
     shot: {type: chapter, text: "なぜ？", sub: "眠りの本当の役わり", emoji: "🔍"}
   - say: 実は、脳は寝ているあいだに、ゴミ出しをしています。
-    shot: {type: brain, mode: clean, text: "寝ているあいだに「ゴミ出し」"}
+    shot: {type: sim3d, scene: brain, mode: clean, text: "寝ているあいだに「ゴミ出し」"}
   - say: 起きているあいだにたまった、脳の中の老廃物。これを、眠っているあいだに洗い流す仕組みがあることが、研究でわかってきました。
   - say: 眠らないということは、ゴミ出しをせずに、ゴミをためつづけるということです。
-    shot: {type: brain, mode: dirty, text: "眠らないと…ゴミがたまる"}
+    shot: {type: sim3d, scene: brain, mode: dirty, text: "眠らないと…ゴミがたまる"}
   - say: ネズミの実験では、まったく眠らせないようにすると、2〜3週間ほどで死んでしまった、という結果もあります。
     shot: {type: big, text: "2〜3週間", sub: "まったく眠れなかったネズミ", emoji: "🐭", size: 170}
   - say: 眠りは、ただの休憩ではありません。体と脳の、メンテナンスの時間なんです。
@@ -100,7 +100,7 @@ beats:
   - say: 1964年、アメリカ。17歳の高校生が、学校の自由研究として、人間はどれだけ眠らずにいられるかに挑戦しました。
     shot: {type: newspaper, year: "1964年", headline: "17歳の高校生\n眠らない記録に挑戦"}
   - say: 記録は、264時間。およそ、11日間です。
-    shot: {type: big, text: "264時間", count: true, count_secs: 2.2, sub: "およそ11日間", emoji: "⏱️"}
+    shot: {type: sim3d, scene: earth, hours: 264, start_hour: 6, big: "264時間", count: true, count_secs: 3.0, sub: "地球が11回まわるあいだ"}
     hud: 264時間
   - say: 途中、彼にも、今日話したことが次々に起きました。イライラ、物忘れ、言葉が出てこない。そして、幻覚。
     shot: {type: icons, items: [{emoji: "💢", text: "イライラ"}, {emoji: "❓", text: "物忘れ"}, {emoji: "💬", text: "言葉が出ない"}, {emoji: "👻", text: "幻覚"}], stagger: 0.9}

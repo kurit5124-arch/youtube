@@ -241,10 +241,24 @@ def shot_newspaper(img, s, t, accent):
         paste_center(img, text_sprite(s["year"], 110, accent, 10, INK), 330, 230, appear(t, 0.4))
 
 
+def shot_sim3d(img, s, t, accent):
+    """3Dシミュレーション（moshimo/sim3d で先に書き出したコマを貼る）＋文字。"""
+    frames = s.get("_frames") or []
+    if frames:
+        from PIL import Image as _I
+        k = min(len(frames) - 1, max(0, int(t * 30)))
+        img.paste(_I.open(frames[k]).convert("RGBA"), (0, 0))
+    if s.get("text"):
+        paste_center(img, text_sprite(s["text"], 72, (255, 255, 255), 9, INK), W / 2, 195, appear(t, 0.3))
+    if s.get("big"):
+        shot_big(img, {"text": s["big"], "count": s.get("count"), "count_secs": s.get("count_secs", 1.6),
+                       "sub": s.get("sub"), "size": s.get("size", 170)}, t, accent)
+
+
 SHOTS = {
     "title": shot_title, "clock": shot_clock, "mascot": shot_mascot, "equal": shot_equal, "big": shot_big,
     "chapter": shot_chapter, "icons": shot_icons, "list": shot_list, "brain": shot_brain,
-    "warning": shot_warning, "newspaper": shot_newspaper,
+    "warning": shot_warning, "newspaper": shot_newspaper, "sim3d": shot_sim3d,
 }
 
 
