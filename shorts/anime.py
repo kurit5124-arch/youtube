@@ -316,7 +316,7 @@ class SceneAnimator:
         talk = env * (1 if t < self.dur - 0.2 else 0)
         speaker = self.art.get("speaker")
         for k, c in enumerate(self.cast):
-            enter = _ease_back((t - k * 0.12) / 0.35)
+            enter = 1.0 if self.idx == 0 else _ease_back((t - k * 0.12) / 0.35)
             if enter <= 0:
                 continue
             speaking = speaker == k and talk > 0.25
@@ -345,7 +345,7 @@ class SceneAnimator:
         if self.block:  # 字幕（上の方の吹き出し。1 文字ずつ出る）
             b = self.block
             top = 560
-            k = _ease_back((t - 0.05) / 0.3)
+            k = 1.0 if self.idx == 0 else _ease_back((t - 0.05) / 0.3)
             if k > 0:
                 layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
                 ld = ImageDraw.Draw(layer)
@@ -354,7 +354,7 @@ class SceneAnimator:
                 if speaker is not None and speaker < len(self.cast):
                     tail = (self.cast[speaker].get("x", 0.5) * W, box[3] + 90)
                 _bubble(ld, box, tail)
-                shown = self._typed(b, t)
+                shown = b.total if self.idx == 0 else self._typed(b, t)
                 b.draw(ld, W / 2, top + 40, shown)
                 if abs(k - 1) < 1e-3:
                     img.alpha_composite(layer)
@@ -363,21 +363,76 @@ class SceneAnimator:
                     _paste_scaled(img, layer, ccx * (1 - k) + W * k / 2, ccy * (1 - k) + H * k / 2, k)
         big = self.art.get("big")
         if big:  # 大きな数字・言葉をドンと出す
-            k = _ease_out((t - 0.25) / 0.25)
+            k = 0.85 + 0.15 * _ease_out(t / 0.3) if self.idx == 0 else _ease_out((t - 0.25) / 0.25)
             if k > 0:
                 f = self.f(170)
-                while f.getlength(big) > 1000 and f.size > 80:
+                while f.getlength(big) > 900 and f.size > 80:
                     f = self.f(f.size - 10)
                 layer = Image.new("RGBA", (W, 320), (0, 0, 0, 0))
                 _outlined(ImageDraw.Draw(layer), (W // 2, 160), big, f, fill=tuple(self.art.get("big_color", (255, 70, 70))),
                           stroke=(255, 255, 255), width=16)
                 _paste_scaled(img, layer, W / 2, self.art.get("big_y", 1060), 2.2 - 1.2 * k, angle=-3)
         out = img.convert("RGB")
-        if (big and 0.25 < t < 0.7) or self.art.get("shake") and t < 0.45:
+        if self.art.get("cta"):
+            self._cta(img, t)
+        out = img.convert("RGB") if self.art.get("cta") else out
+        if (big and (0.0 if self.idx == 0 else 0.25) < t < 0.7) or self.art.get("shake") and t < 0.45:
             amp = 16 * (1 - min(1, (t % 0.45) / 0.45))
             out = out.transform(out.size, Image.AFFINE, (1, 0, random.uniform(-amp, amp), 0, 1, random.uniform(-amp, amp)),
                                 fillcolor=(0, 0, 0))
         return out
+
+    def _word_time(self, word: str, fallback: float) -> float:
+        """字幕の中の word を読み上げ終わる時刻（声の進みから逆算）。"""
+        b = self.block
+        text = "".join(b.lines) if b else ""
+        pos = text.find(word)
+        if pos < 0 or self.progress is None:
+            return self.dur * fallback
+        need = pos + len(word)
+        for i in range(len(self.progress)):
+            if b.shown_at(float(self.progress[i])) >= need:
+                return i / FPS
+        return self.dur * fallback
+
+    def _cta(self, img: Image.Image, t: float) -> None:
+        """「チャンネル登録」「高評価」のボタン。指がタップして登録済みになる。"""
+        k = _ease_back((t - 0.2) / 0.35)
+        if k <= 0:
+            return
+        t_sub, t_like = self._word_time("登録", 0.5), self._word_time("高評価", 0.68)
+        tapped = t > t_sub + 0.1
+        y = self.art.get("cta_y", 1060)
+        layer = Image.new("RGBA", (W, 240), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(layer)
+        bx0, bx1 = 90, 640
+        ld.rounded_rectangle([bx0 + 8, 30, bx1 + 8, 170], radius=70, fill=(0, 0, 0, 90))
+        ld.rounded_rectangle([bx0, 20, bx1, 160], radius=70, fill=(120, 120, 128) if tapped else (230, 33, 23),
+                             outline=INK, width=6)
+        ld.text(((bx0 + bx1) / 2, 90), "登録済み" if tapped else "チャンネル登録", font=self.f(60),
+                fill=(255, 255, 255), anchor="mm")
+        lx0, lx1 = 680, 990
+        ld.rounded_rectangle([lx0 + 8, 30, lx1 + 8, 170], radius=70, fill=(0, 0, 0, 90))
+        ld.rounded_rectangle([lx0, 20, lx1, 160], radius=70, fill=(255, 255, 255), outline=INK, width=6)
+        thumb = emoji_image("👍", 84)
+        if thumb is not None:
+            pop = 1 + 0.25 * max(0.0, 1 - abs(t - t_like - 0.1) / 0.2) if t > t_like - 0.1 else 1.0
+            th = thumb.resize((int(thumb.width * pop), int(thumb.height * pop)))
+            layer.alpha_composite(th, (int(lx0 + 95 - th.width / 2), int(90 - th.height / 2)))
+        ld.text((lx0 + 215, 90), "高評価", font=self.f(50), fill=INK, anchor="mm")
+        _paste_scaled(img, layer, W / 2, y, k)
+        # 指（タップする手）
+        hand = emoji_image("👆", 120)
+        if hand is not None and t_sub - 0.7 < t < t_like + 0.9:
+            if t < t_sub:
+                hx, hy = (bx0 + bx1) / 2 + 60, y + 150 + (t_sub - t) * 230
+            elif t < t_like:
+                q = (t - t_sub) / (t_like - t_sub)
+                hx, hy = (bx0 + bx1) / 2 + 60 + q * ((lx0 + 95) - (bx0 + bx1) / 2 - 60), y + 150
+            else:
+                hx, hy = lx0 + 95, y + 150
+            press = 0.88 if (t_sub < t < t_sub + 0.15) or (t_like < t < t_like + 0.15) else 1.0
+            _paste_scaled(img, hand, hx, hy, press)
 
     def frame(self, i: int, env: float) -> Image.Image:
         if self.art:

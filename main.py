@@ -51,7 +51,8 @@ def main() -> int:
         st = story.load(ROOT / args.story_file)[args.story_index]
         if st.get("voice"):
             cfg = {**cfg, "voice": {**cfg.get("voice", {}), **st["voice"]}}
-        cfg = {**cfg, "max_seconds": st.get("max_seconds", 59)}
+        # テンポを速く（場面の間を短く）
+        cfg = {**cfg, "max_seconds": st.get("max_seconds", 59), "scene_gap": st.get("scene_gap", 0.2)}
         plan = story.plan_story(st, date)
     elif args.topics_file:
         source = "topics"

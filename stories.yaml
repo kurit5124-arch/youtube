@@ -10,6 +10,8 @@
 #   1) 最初の1秒で「数字＋疑問」  2) 3〜7秒ごとに場面を切り替える
 #   3) 表情のある人物で感情を見せる  4) 賛否両論でコメントを誘う
 #   5) シリーズ名と番号で「次も見たい」を作る  6) 最後の一言が最初につながる（ループ）
+#   7) 最初の場面は 1 フレーム目から全部見せる（スワイプ中に見える絵が勝負）
+#   8) 「チャンネル登録・高評価」は最後に（最初に言うと離脱される）
 #
 # 場面（scenes）の書き方
 #   label: 小見出し / text: 字幕 / narration: 読み上げ
@@ -19,6 +21,7 @@
 #             expr: neutral|happy|angry|sad|shock|worried|serious,
 #             x: 0〜1（横位置）, scale: 大きさ, flip: 左右反転, bike: 自転車, fx: 効果の絵文字(💢💦❗❓)}]
 #     speaker: しゃべる人の番号（口が動く）/ big: 大きく出す言葉 / shake: 揺らす
+#     cta: true … 「チャンネル登録」「高評価」のボタンを指がタップする演出（最後の場面に）
 #   選択肢の場面: choices: [Aの言葉, Bの言葉]
 
 - title: 小学生の自転車事故で賠償9500万円
@@ -64,7 +67,7 @@
           - {who: judge, expr: serious, x: 0.5}
     - label: 「納得できない」という声
       text: 子どもの事故で、親が一生かけても払えない額は重すぎる
-      narration: ネットでは、子どもの事故で、親が一生かけても払えない額は重すぎる、という声が上がりました。
+      narration: 子どもの事故で、親が一生かけても払えない額は重すぎる、という声が上がりました。
       art:
         bg: net
         speaker: 0
@@ -86,13 +89,22 @@
       narration: あなたはこの判決、納得できますか？Aなら納得できる、Bなら納得できない。コメントで教えてください。
     - label: その後
       text: この判決をきっかけに、自転車保険を義務にする自治体が増えた。あなたは入ってる？
-      narration: この判決をきっかけに、自転車保険の加入を義務にする自治体が増えました。あなたの家は、入っていますか？
+      narration: この判決をきっかけに、自転車保険を義務にする自治体が増えました。あなたは入っていますか？
       art:
         bg: home
         speaker: 0
         cast:
           - {who: mother, expr: worried, x: 0.3, fx: "❓"}
           - {who: child, expr: neutral, x: 0.7, scale: 0.85, flip: true}
+    - label: 次回
+      narration: 次回も、納得できない判決を紹介します。チャンネル登録と高評価、よろしくお願いします！
+      art:
+        bg: home
+        speaker: 1
+        cta: true
+        cast:
+          - {who: mother, expr: happy, x: 0.28, scale: 0.85, y: 1850}
+          - {who: child, expr: happy, x: 0.72, scale: 0.78, y: 1850, flip: true}
   tags: [納得できない判決, 実話, 裁判, 自転車事故, 自転車保険, 賠償, shorts]
   description: |
     小学生の自転車事故で、母親に約9500万円の賠償命令。あなたはこの判決、納得できますか？
@@ -180,13 +192,14 @@
       choices: [納得できる, 納得できない]
       narration: この逆転判決、あなたは納得できますか？Aなら納得、Bなら納得できない。
     - label: 次回
-      narration: 次回も、納得できない判決を紹介します。
+      narration: 次回も、納得できない判決を紹介します。チャンネル登録と高評価、よろしくお願いします！
       art:
         bg: home
         speaker: 1
+        cta: true
         cast:
-          - {who: mother, expr: neutral, x: 0.3}
-          - {who: child, expr: happy, x: 0.7, scale: 0.85, flip: true, fx: "⚽"}
+          - {who: mother, expr: happy, x: 0.28, scale: 0.85, y: 1850}
+          - {who: child, expr: happy, x: 0.72, scale: 0.78, y: 1850, flip: true, fx: "⚽"}
   tags: [納得できない判決, 実話, 裁判, 最高裁, 逆転判決, 親の責任, shorts]
   description: |
     子どもが校庭で蹴ったボールが原因の事故で、両親に1000万円を超える賠償命令。ところが最高裁で逆転…。あなたはこの判決、納得できますか？
