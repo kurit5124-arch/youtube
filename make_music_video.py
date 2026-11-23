@@ -96,7 +96,7 @@ def main() -> int:
         kind, args.hue, vseed = scenes.choose(args.scene, args.hue, args.visual_seed)
         print(f"      背景: {kind}（色味 {args.hue:+.0f}°, 配置 {vseed}）")
     opts = dict(title=args.title, subtitle=args.subtitle, seed=vseed, hue=args.hue)
-    if kind == "city" and args.style == "walker":
+    if kind in ("city", "aurora") and args.style == "walker":
         opts["snow"] = True
     if args.image:
         opts["image"] = args.image

@@ -145,6 +145,24 @@ class Post:
         return np.clip(img, 0, 1)
 
 
+class Snow:
+    """降る雪（手前ほど大きく速い）。盛り上がると少し速く、風で流れる"""
+
+    def __init__(self, W, H, rng, count=420):
+        self.W, self.H = W, H
+        d = rng.random(count)
+        self.x, self.y, self.depth = rng.random(count) * W, rng.random(count) * H, d
+        self.size, self.speed, self.ph = 1.2 + d ** 2 * 4.5, 30 + d * 110, rng.random(count) * 6.28
+
+    def draw(self, img, t, prog):
+        fall = t + prog * 0.35
+        ys = (self.y + self.speed * fall) % (self.H + 20) - 10
+        xs = (self.x + 25 * np.sin(t * 0.6 + self.ph) + self.speed * 0.25 * fall) % self.W
+        for x, y, sz, d in zip(xs, ys, self.size, self.depth):
+            a = 0.5 + 0.5 * d
+            cv2.circle(img, (int(x), int(y)), max(1, int(sz)), (a, a, a * 1.05), -1, cv2.LINE_AA)
+
+
 class Particles:
     """上に舞い上がる光の粒（盛り上がるほど速い）"""
 

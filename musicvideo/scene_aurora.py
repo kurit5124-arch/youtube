@@ -11,11 +11,11 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from .analyze import Features
-from .scene import Particles, Post, _blur, _hex, _noise, _pil_to_np, _title_layers, _vgrad
+from .scene import Particles, Post, Snow, _blur, _hex, _noise, _pil_to_np, _title_layers, _vgrad
 
 
 class AuroraScene:
-    def __init__(self, W, H, feats: Features, title="", subtitle="", seed=7, hue=0.0, **_):
+    def __init__(self, W, H, feats: Features, title="", subtitle="", seed=7, hue=0.0, snow=False, **_):
         self.W, self.H, self.f = W, H, feats
         rng = np.random.default_rng(seed)
         self.rng = rng
@@ -58,6 +58,7 @@ class AuroraScene:
                                                         width_frac=0.7 if not portrait else 0.86)
         self.title_glow = _blur(g, 26, 4) + _blur(g, 8, 2)
         self.particles = Particles(W, H, rng, count=90, colors=("#b8fff0", "#d8c8ff", "#ffffff"))
+        self.snow = Snow(W, H, rng) if snow else None
         self.post = Post(W, H, rng)
         self.post.set_hue_track(feats, hue)
 
@@ -180,6 +181,8 @@ class AuroraScene:
         img[hy:] = water + refl * np.linspace(0.6, 0.15, rh)[:, None, None]
 
         img += _blur(glow, 16, 4) * (0.7 + 0.4 * b) + _blur(glow, 60, 8) * (0.4 + 0.5 * e)
+        if self.snow is not None:
+            self.snow.draw(img, t, f.beat_phase[i])
         img = img * (1 - self.title_a) + self.title_rgb * self.title_a
         img += self.title_glow * (0.5 + 0.4 * k + 0.5 * dr)
         return self.post(img, i, f, self.rng)
