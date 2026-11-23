@@ -41,3 +41,10 @@ upload:
   privacy: public
   category_id: 27        # 27=教育, 24=エンタメ, 22=ブログ
   made_for_kids: false
+
+# 「昨日の多数決」（python main.py --source poll / お題は polls.yaml）
+poll:
+  header: 日本人の多数決   # 画面上部の見出し
+  min_votes: 1            # 昨日の票がこれより少なければ結果発表をしない
+  show_count_from: 30     # 票がこの数以上なら「○人が答えてくれました」と人数を言う
+  max_seconds: 58

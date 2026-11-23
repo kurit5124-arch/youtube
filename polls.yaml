@@ -1,0 +1,320 @@
+# 「昨日の多数決」のお題帳（python main.py --source poll）
+#
+# 毎日1つ選ばれ、動画のコメント（A / B / C）で投票してもらいます。
+# 次の日の動画で結果を発表します。
+#
+# - id: お題のID（英数字。一度決めたら変えない。結果の記録に使う）
+#   question: お題（短いほど読みやすい。20文字くらいまで）
+#   emoji: イラスト（絵文字1つ。省略時は自動）
+#   choices:            # 2〜3個。label は短く（8文字くらいまで）
+#     - label: 醤油
+#       words: [しょうゆ, しょう油]   # コメントにこの言葉があれば、この選択肢の票として数える（省略可）
+#   months: [12]        # この月だけ使う（省略可）
+#   dates: ["12-24"]    # この日に優先して使う（省略可）
+#   tags: [タグ, ...]
+#
+# お題選びのコツ
+# - 誰でも答えられる・どちらも「わかる」と言える・ケンカになりにくいもの
+# - 政治・宗教・特定の人や地域をけなすお題は入れない
+
+- id: medamayaki
+  question: 目玉焼きに何かける？
+  emoji: 🍳
+  choices:
+    - {label: 醤油, words: [しょうゆ, しょう油]}
+    - {label: ソース}
+    - {label: 塩こしょう, words: [塩, しお, 胡椒, コショウ]}
+  tags: [目玉焼き, 食べ物, あるある]
+
+- id: kinoko-takenoko
+  question: チョコ菓子、山派？里派？
+  emoji: 🍫
+  choices:
+    - {label: 山派, words: [きのこ, 山]}
+    - {label: 里派, words: [たけのこ, 里]}
+  tags: [お菓子, チョコ, 論争]
+
+- id: escalator
+  question: エスカレーター、歩く？止まる？
+  emoji: 🚶
+  choices:
+    - {label: 歩く}
+    - {label: 止まる, words: [立ち止まる, 止まって]}
+  tags: [エスカレーター, マナー, あるある]
+
+- id: karaage-lemon
+  question: 唐揚げにレモン、かける？
+  emoji: 🍋
+  choices:
+    - {label: かける, words: [かけたい, かけます]}
+    - {label: かけない, words: [かけません, 絶対なし]}
+  tags: [唐揚げ, レモン, 食べ物]
+
+- id: bath-time
+  question: お風呂は朝派？夜派？
+  emoji: 🛁
+  choices:
+    - {label: 朝, words: [朝派, 朝風呂]}
+    - {label: 夜, words: [夜派]}
+  tags: [お風呂, 生活, あるある]
+
+- id: dog-cat
+  question: 飼うなら犬？猫？
+  emoji: 🐾
+  choices:
+    - {label: 犬, words: [いぬ, イヌ, わんこ]}
+    - {label: 猫, words: [ねこ, ネコ, にゃんこ]}
+  tags: [犬, 猫, ペット]
+
+- id: sushi-first
+  question: 回転寿司、最初に食べるのは？
+  emoji: 🍣
+  choices:
+    - {label: マグロ, words: [まぐろ, 鮪]}
+    - {label: サーモン, words: [サーモン, 鮭]}
+    - {label: たまご, words: [玉子, 卵]}
+  tags: [寿司, 回転寿司, 食べ物]
+
+- id: alarm
+  question: 目覚ましは1回で起きる？
+  emoji: ⏰
+  choices:
+    - {label: 1回で起きる, words: [一発, 1回]}
+    - {label: 何回も鳴らす, words: [スヌーズ, 何回, 二度寝]}
+  tags: [朝, 目覚まし, あるある]
+
+- id: oden
+  question: おでんの最強の具は？
+  emoji: 🍢
+  choices:
+    - {label: 大根, words: [だいこん]}
+    - {label: たまご, words: [卵, 玉子]}
+    - {label: ちくわぶ, words: [ちくわ]}
+  months: [11, 12, 1, 2]
+  tags: [おでん, 冬, 食べ物]
+
+- id: kotatsu-heater
+  question: 冬の最強はこたつ？エアコン？
+  emoji: 🔥
+  choices:
+    - {label: こたつ, words: [コタツ, 炬燵]}
+    - {label: エアコン, words: [暖房]}
+  months: [11, 12, 1, 2]
+  tags: [冬, こたつ, あるある]
+
+- id: summer-winter
+  question: 夏と冬、どっちが好き？
+  emoji: 🌞
+  choices:
+    - {label: 夏, words: [夏派]}
+    - {label: 冬, words: [冬派]}
+  tags: [季節, 夏, 冬]
+
+- id: ramen-soup
+  question: ラーメン、スープは飲み干す？
+  emoji: 🍜
+  choices:
+    - {label: 飲み干す, words: [完飲, 全部飲む]}
+    - {label: 残す, words: [残します]}
+  tags: [ラーメン, 食べ物, あるある]
+
+- id: shortcake-strawberry
+  question: ショートケーキのいちごはいつ食べる？
+  emoji: 🍰
+  choices:
+    - {label: 最初, words: [先に, 一番に]}
+    - {label: 最後, words: [あとで, 後で, 取っておく]}
+  tags: [ケーキ, いちご, あるある]
+
+- id: tamago-kake
+  question: 卵かけご飯、卵は先？ご飯に直接？
+  emoji: 🥚
+  choices:
+    - {label: 先に混ぜる, words: [溶いて, 混ぜてから]}
+    - {label: ご飯に直接, words: [直接, 直]}
+  tags: [卵かけご飯, TKG, 食べ物]
+
+- id: line-reply
+  question: LINEの返信、すぐ返す？
+  emoji: 📱
+  choices:
+    - {label: すぐ返す, words: [即レス, すぐ]}
+    - {label: あとで返す, words: [後で, あとで, 既読スルー]}
+  tags: [LINE, スマホ, あるある]
+
+- id: socks-first
+  question: 靴下、右から履く？左から？
+  emoji: 🧦
+  choices:
+    - {label: 右から, words: [右]}
+    - {label: 左から, words: [左]}
+  tags: [靴下, 無意識, あるある]
+
+- id: curry-mix
+  question: カレー、混ぜて食べる？
+  emoji: 🍛
+  choices:
+    - {label: 混ぜる, words: [全部混ぜる]}
+    - {label: 混ぜない, words: [崩しながら, 混ぜません]}
+  tags: [カレー, 食べ物, 論争]
+
+- id: natto
+  question: 納豆、好き？
+  emoji: 🫘
+  choices:
+    - {label: 好き, words: [大好き, 毎日]}
+    - {label: 苦手, words: [嫌い, 無理]}
+  tags: [納豆, 食べ物, 好き嫌い]
+
+- id: umbrella
+  question: 小雨のとき、傘さす？
+  emoji: ☔
+  choices:
+    - {label: さす, words: [差す]}
+    - {label: ささない, words: [差さない, 濡れる]}
+  tags: [傘, 雨, あるある]
+
+- id: toilet-paper
+  question: トイレットペーパー、シングル？ダブル？
+  emoji: 🧻
+  choices:
+    - {label: シングル}
+    - {label: ダブル}
+  tags: [トイレットペーパー, 生活, 論争]
+
+- id: sweet-salty
+  question: おやつは甘い派？しょっぱい派？
+  emoji: 🍪
+  choices:
+    - {label: 甘い, words: [甘い派, スイーツ]}
+    - {label: しょっぱい, words: [しょっぱい派, ポテチ, せんべい]}
+  tags: [おやつ, お菓子, 好み]
+
+- id: phone-charge
+  question: スマホの充電、何%で充電する？
+  emoji: 🔋
+  choices:
+    - {label: 50%以上でも, words: [こまめ, いつでも]}
+    - {label: 20%くらい, words: [20]}
+    - {label: ほぼ0%, words: [ギリギリ, ゼロ, 赤くなって]}
+  tags: [スマホ, 充電, あるある]
+
+- id: pudding
+  question: プリン、固い派？とろとろ派？
+  emoji: 🍮
+  choices:
+    - {label: 固い, words: [かため, 硬い, 固め]}
+    - {label: とろとろ, words: [トロトロ, なめらか]}
+  tags: [プリン, スイーツ, 好み]
+
+- id: soba-udon
+  question: そばとうどん、どっち派？
+  emoji: 🍜
+  choices:
+    - {label: そば, words: [蕎麦, ソバ]}
+    - {label: うどん, words: [饂飩, ウドン]}
+  tags: [そば, うどん, 食べ物]
+
+- id: window-aisle
+  question: 新幹線、窓側？通路側？
+  emoji: 🚄
+  choices:
+    - {label: 窓側, words: [窓]}
+    - {label: 通路側, words: [通路]}
+  tags: [新幹線, 旅行, 好み]
+
+- id: rice-bread
+  question: 朝ごはん、ごはん？パン？
+  emoji: 🍞
+  choices:
+    - {label: ごはん, words: [ご飯, 米, 和食]}
+    - {label: パン, words: [トースト, 洋食]}
+    - {label: 食べない, words: [抜く, なし]}
+  tags: [朝ごはん, 生活, あるある]
+
+- id: sleep-position
+  question: 寝るとき、靴下はく？
+  emoji: 🛏️
+  choices:
+    - {label: はく, words: [履く]}
+    - {label: はかない, words: [履かない, 裸足]}
+  tags: [睡眠, 靴下, あるある]
+
+- id: watermelon-salt
+  question: スイカに塩、かける？
+  emoji: 🍉
+  choices:
+    - {label: かける, words: [かけます]}
+    - {label: かけない, words: [かけません]}
+  months: [6, 7, 8, 9]
+  tags: [スイカ, 夏, 食べ物]
+
+- id: hiyashi
+  question: 夏の麺、そうめん？冷やし中華？
+  emoji: 🍜
+  choices:
+    - {label: そうめん, words: [素麺]}
+    - {label: 冷やし中華, words: [冷やし]}
+  months: [6, 7, 8, 9]
+  tags: [そうめん, 冷やし中華, 夏]
+
+- id: christmas-cake
+  question: クリスマスケーキ、何派？
+  emoji: 🎄
+  choices:
+    - {label: いちご, words: [ショートケーキ, 苺]}
+    - {label: チョコ, words: [ブッシュドノエル, ガトー]}
+  months: [12]
+  tags: [クリスマス, ケーキ, 冬]
+
+- id: new-year-mochi
+  question: お雑煮のお餅、角？丸？
+  emoji: 🍡
+  choices:
+    - {label: 角もち, words: [角, 四角]}
+    - {label: 丸もち, words: [丸]}
+  months: [12, 1]
+  tags: [お雑煮, 正月, 餅]
+
+- id: hanami
+  question: お花見、団子？お弁当？
+  emoji: 🌸
+  choices:
+    - {label: 団子, words: [だんご, 花より団子]}
+    - {label: お弁当, words: [弁当]}
+  months: [3, 4]
+  tags: [お花見, 春, 桜]
+
+- id: dessert-stomach
+  question: 「デザートは別腹」ある？
+  emoji: 🍨
+  choices:
+    - {label: ある, words: [あります, 別腹]}
+    - {label: ない, words: [ありません]}
+  tags: [デザート, スイーツ, あるある]
+
+- id: travel-plan
+  question: 旅行、計画きっちり？行き当たりばったり？
+  emoji: 🧳
+  choices:
+    - {label: きっちり, words: [計画派, しっかり]}
+    - {label: 行き当たりばったり, words: [ノープラン, 気まま]}
+  tags: [旅行, 性格, あるある]
+
+- id: homework
+  question: 夏休みの宿題、いつやってた？
+  emoji: 📚
+  choices:
+    - {label: 最初に終わらせる, words: [最初, 先に]}
+    - {label: 毎日少しずつ, words: [コツコツ, 少しずつ]}
+    - {label: 最後にまとめて, words: [ギリギリ, 最後]}
+  tags: [宿題, 夏休み, あるある]
+
+- id: gyoza
+  question: 餃子のタレ、何つける？
+  emoji: 🥟
+  choices:
+    - {label: 醤油とラー油, words: [ラー油, 酢醤油]}
+    - {label: 酢こしょう, words: [酢胡椒, 酢と胡椒, コショウ]}
+    - {label: そのまま, words: [何もつけない]}
+  tags: [餃子, 食べ物, 好み]

@@ -153,7 +153,7 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         size = 66
         while size > 40:
             cf = ImageFont.truetype(font_path, size)
-            room = (cx1 - cx0 - 100) - 120 - cf.getlength("正解") - 30
+            room = (cx1 - cx0 - 100) - 120 - cf.getlength("100%" if scene.ratios else scene.reveal_label) - 30
             if max(cf.getlength(c) for c in scene.choices) <= room:
                 break
             size -= 2
@@ -163,10 +163,23 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
         for i, ch in enumerate(scene.choices):
             y0 = top + i * (row_h + gap_y)
             box = [cx0 + 50, y0, cx1 - 50, y0 + row_h]
-            if scene.reveal and i == scene.answer:
+            win = scene.reveal and i == scene.answer
+            if scene.reveal and scene.ratios:
+                # 多数決の結果：割合の長さだけ色を塗る
+                d.rounded_rectangle(box, radius=56, fill=(229, 231, 235))
+                r = max(0.0, min(1.0, scene.ratios[i] if i < len(scene.ratios) else 0.0))
+                fw = (box[2] - box[0]) * r
+                if fw >= 2 * 56:
+                    d.rounded_rectangle([box[0], box[1], box[0] + fw, box[3]], radius=56,
+                                        fill=(34, 197, 94) if win else accent)
+                elif fw > 0:
+                    d.ellipse([box[0], box[1], box[0] + 2 * 56, box[3]], fill=(34, 197, 94) if win else accent)
+                d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(25, 25, 35), anchor="lm")
+                d.text((box[2] - 60, y0 + row_h / 2), f"{round(r * 100)}%", font=cf, fill=(25, 25, 35), anchor="rm")
+            elif win:
                 d.rounded_rectangle(box, radius=56, fill=(34, 197, 94))
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(255, 255, 255), anchor="lm")
-                d.text((box[2] - 60, y0 + row_h / 2), "正解", font=cf, fill=(255, 255, 255), anchor="rm")
+                d.text((box[2] - 60, y0 + row_h / 2), scene.reveal_label, font=cf, fill=(255, 255, 255), anchor="rm")
             elif scene.reveal:
                 d.rounded_rectangle(box, radius=56, fill=(229, 231, 235))
                 d.text((box[0] + 60, y0 + row_h / 2), ch, font=cf, fill=(160, 160, 170), anchor="lm")

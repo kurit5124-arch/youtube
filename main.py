@@ -7,6 +7,7 @@
   python main.py --date 2026-12-25    # 日付を指定
   python main.py --upload             # 作ったあと YouTube に投稿
   python main.py --channel affiliate  # 別チャンネル（channels/affiliate/ の設定）で作る
+  python main.py --source poll        # 「昨日の多数決」（昨日のコメントを集計＋今日のお題）
 """
 from __future__ import annotations
 
@@ -19,7 +20,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
-from shorts import affiliate, pipeline, sources, upload
+from shorts import affiliate, pipeline, poll, sources, upload
 
 ROOT = Path(__file__).resolve().parent
 
@@ -27,7 +28,7 @@ ROOT = Path(__file__).resolve().parent
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--channel", help="channels/<名前>/ の設定で作る（既定: リポジトリ直下の設定＝メインチャンネル）")
-    ap.add_argument("--source", choices=["auto", "today", "topics"], help="ネタの取り方（既定: config.yaml）")
+    ap.add_argument("--source", choices=["auto", "today", "topics", "poll"], help="ネタの取り方（既定: config.yaml）")
     ap.add_argument("--date", help="YYYY-MM-DD（既定: 日本時間の今日）")
     ap.add_argument("--topic-index", type=int, help="topics.yaml の何番目を使うか（0始まり）")
     ap.add_argument("--slot", type=int, default=0, help="1日に複数本の雑学を出すときの何本目か（0始まり）")
@@ -72,6 +73,9 @@ def main() -> int:
             return 2
         vid = upload.upload(out, plan, cfg)
         print(f"[uploaded] https://youtube.com/shorts/{vid}")
+        if plan.poll:
+            poll.save_state(cdir, plan, vid, date)  # 明日の結果発表で、この動画のコメントを数える
+            print(f"[poll] {cdir / poll.STATE_FILE} を更新しました")
         gh = os.environ.get("GITHUB_STEP_SUMMARY")
         if gh:
             with open(gh, "a", encoding="utf-8") as f:

@@ -131,6 +131,31 @@ python scripts/build_affiliate_site.py              # まとめページを site
 - Amazon リンクを使うときは「Amazonのアソシエイトとして…」の文言も自動で入ります（規約で必須）
 - 商品について事実でないこと（効果の断定など）は書かないでください
 
+## 5. 昨日の多数決（毎日19時ごろ）
+
+視聴者のコメントで答えが決まる、答えのないクイズです。
+
+```
+きのうの動画のコメント「A」「B」… ──▶ 集計 ──▶ 結果発表（%バー） ＋ 今日のお題 ──▶ 投稿
+                                                                         │
+                         poll_state.json に今日の動画IDを記録（明日の集計用）◀─┘
+```
+
+- お題は **`polls.yaml`**（日常のゆるい二択・三択）。書き足すほど増えます。`months:` で季節もの
+- コメントは「A」「b派」「醤油！」のように、**先頭の A/B/C か選択肢の言葉**で数えます（1人1票、最後のコメント、自分のコメントは除外）
+- 結果は `poll_state.json` の `history` にたまっていきます（あとでランキングやまとめに使えます）
+
+### 設定（1回だけ）
+1. [Google Cloud Console](https://console.cloud.google.com/) の、投稿に使っているのと同じプロジェクトで
+   **「認証情報 → 認証情報を作成 → API キー」**（無料）。キーの制限で「YouTube Data API v3」だけに絞っておくと安全です
+2. GitHub の **Settings → Secrets and variables → Actions** に **`YT_API_KEY`** として登録
+
+キーが無いときは、結果発表なしで「今日のお題」だけの動画になります。
+
+```bash
+python main.py --source poll   # 試しに作る（結果発表は YT_API_KEY と前回の記録があるときだけ）
+```
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -151,6 +176,9 @@ python scripts/build_affiliate_site.py              # まとめページを site
 ```
 main.py                     実行の入口
 config.yaml / topics.yaml   設定とネタ帳
+polls.yaml / poll_state.json  多数決のお題帳と、前回の動画・結果の記録
+shorts/poll.py              多数決（コメント集計・台本作り）
+.github/workflows/daily-poll.yml  多数決の毎日投稿
 shorts/sources.py           ネタ集め・台本作り
 shorts/wikitext.py          Wikipedia の文章の整形
 shorts/tts.py               音声合成（Edge TTS）

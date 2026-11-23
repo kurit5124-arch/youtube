@@ -19,6 +19,8 @@ class Scene:
     countdown: int | None = None # カウントダウン表示（3,2,1）
     emoji: str = ""              # このシーンのイラスト
     subtext: str = ""            # text の下に小さめに出す説明
+    reveal_label: str = "正解"   # 正解発表で強調した選択肢の右に出す文字（多数決なら「1位」）
+    ratios: list[float] = field(default_factory=list)  # 選択肢ごとの割合 0〜1（多数決の結果バー）
 
 
 @dataclass
@@ -35,3 +37,4 @@ class VideoPlan:
     emojis: list[str] = field(default_factory=list)  # 背景に散らすイラスト
     max_seconds: float | None = None  # この動画の最大秒数（None なら config の max_seconds）
     products: list[dict] = field(default_factory=list)  # 紹介する商品（affiliate 用。topics.yaml の products:）
+    poll: dict | None = None     # 多数決（source: poll）のお題IDと昨日の結果。投稿後に poll_state.json へ記録

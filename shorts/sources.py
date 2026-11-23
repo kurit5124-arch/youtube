@@ -352,6 +352,9 @@ def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: in
               slot: int = 0) -> VideoPlan:
     if source == "today":
         return plan_today(date, cfg)
+    if source == "poll":
+        from . import poll
+        return poll.plan_poll(date, cfg, root)
     if source == "topics":
         return plan_topic(date, cfg, root / "topics.yaml", topic_index, slot)
     if source == "auto":
