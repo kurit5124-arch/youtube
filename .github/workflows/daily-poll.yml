@@ -5,15 +5,14 @@ name: 昨日の多数決（毎日）
 # 必要な Secrets: YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN（メインと同じ）
 #                 YT_API_KEY（コメントを読む用の API キー。無いと結果発表なしになる）
 
+# 自動投稿はしません（定期実行なし）。Actions の画面から手動で動かすと動画ファイルだけ作ります。
 on:
-  schedule:
-    - cron: "40 9 * * *"   # 夜 18:40 (日本時間) → 19時ごろ
   workflow_dispatch:
     inputs:
       upload:
         description: "YouTube に投稿する"
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: daily-poll
@@ -54,7 +53,7 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           ARGS=(--source poll)
-          if [ "$EVENT" = "schedule" ] || [ "$IN_UPLOAD" = "true" ]; then
+          if [ "$IN_UPLOAD" = "true" ]; then
             if [ -n "$YT_REFRESH_TOKEN" ]; then
               ARGS+=(--upload)
             else

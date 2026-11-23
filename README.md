@@ -131,9 +131,10 @@ python scripts/build_affiliate_site.py              # まとめページを site
 - Amazon リンクを使うときは「Amazonのアソシエイトとして…」の文言も自動で入ります（規約で必須）
 - 商品について事実でないこと（効果の断定など）は書かないでください
 
-## 5. 昨日の多数決（毎日19時ごろ）
+## 5. 昨日の多数決（自動投稿なし）
 
 視聴者のコメントで答えが決まる、答えのないクイズです。
+自動では投稿しません。Actions の **昨日の多数決 → Run workflow** で動画ファイルだけ作り、Artifacts からダウンロードできます。
 
 ```
 きのうの動画のコメント「A」「B」… ──▶ 集計 ──▶ 結果発表（%バー） ＋ 今日のお題 ──▶ 投稿
@@ -178,7 +179,7 @@ main.py                     実行の入口
 config.yaml / topics.yaml   設定とネタ帳
 polls.yaml / poll_state.json  多数決のお題帳と、前回の動画・結果の記録
 shorts/poll.py              多数決（コメント集計・台本作り）
-.github/workflows/daily-poll.yml  多数決の毎日投稿
+.github/workflows/daily-poll.yml  多数決の動画作成（手動実行・投稿なし）
 shorts/sources.py           ネタ集め・台本作り
 shorts/wikitext.py          Wikipedia の文章の整形
 shorts/tts.py               音声合成（Edge TTS）
