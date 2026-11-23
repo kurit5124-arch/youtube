@@ -21,10 +21,9 @@ def _init(kind, W, H, feats, opts):
     cv2.setNumThreads(1)
     if kind == "image":
         _scene = ImageScene(W, H, feats, **opts)
-    elif kind == "city":
-        _scene = SkyCityScene(W, H, feats, **opts)
     else:
-        _scene = NeonDriveScene(W, H, feats, **opts)
+        from .scenes import get_scene_class
+        _scene = get_scene_class(kind)(W, H, feats, **opts)
 
 
 def _frame(i: int) -> bytes:

@@ -22,6 +22,7 @@ from musicvideo.analyze import analyze
 from musicvideo.compose import compose
 from musicvideo.future import compose_future
 from musicvideo.walker import compose_walker
+from musicvideo import scenes
 from musicvideo.render import render_video
 from musicvideo.thumbnail import make_thumbnails
 
@@ -42,8 +43,10 @@ def main() -> int:
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
     ap.add_argument("--voice", default="en-US-AriaNeural", help="ボーカルの声（edge-tts の声の名前。walker スタイルで使う）")
-    ap.add_argument("--scene", choices=["city", "neon"],
-                    help="動く絵の種類 city=夜空と海辺の街・花火 / neon=夕日とグリッドと車（既定: future は city）")
+    ap.add_argument("--scene", choices=["auto", "neon", "city", "aurora", "space"], default="auto",
+                    help="動く絵 auto=毎回ちがう背景（既定） / neon=夕日とグリッドと車 / city=夜空と海辺の街 / "
+                         "aurora=オーロラの雪山と湖 / space=宇宙と惑星")
+    ap.add_argument("--visual-seed", type=int, help="背景の配置（山やビルの形など）を固定したいときの番号")
     ap.add_argument("--image", type=Path, help="自分のイラストを動かす。省略するとプログラムで描く")
     ap.add_argument("--landscape", action="store_true", help="横型 1920x1080 にする（既定は縦型 1080x1920）")
     ap.add_argument("--fps", type=int, default=30)
@@ -55,8 +58,7 @@ def main() -> int:
              "synthwave": "SYNTHWAVE"}[args.style]
     args.title = args.title or {"walker": "SNOWLIGHT", "future": "AFTERGLOW", "hard": "OVERDRIVE", "edm": "SKYLINE",
                                 "synthwave": "NEON DRIVE"}[args.style]
-    if args.hue is None:
-        args.hue = -40.0 if args.style == "walker" else 0.0
+
     args.subtitle = args.subtitle or f"{genre}  ·  ORIGINAL TRACK"
 
     W, H = (1920, 1080) if args.landscape else (1080, 1920)
@@ -86,8 +88,14 @@ def main() -> int:
     print("[2/3] 音を解析中…")
     feats = analyze(audio, fps=args.fps)
 
-    kind = "image" if args.image else (args.scene or ("city" if args.style in ("future", "walker") else "neon"))
-    opts = dict(title=args.title, subtitle=args.subtitle, seed=args.seed, hue=args.hue)
+    if args.image:
+        kind, vseed = "image", args.seed
+        args.hue = args.hue or 0.0
+    else:
+        # 背景は毎回ちがうものを選ぶ（--scene で固定もできる）
+        kind, args.hue, vseed = scenes.choose(args.scene, args.hue, args.visual_seed)
+        print(f"      背景: {kind}（色味 {args.hue:+.0f}°, 配置 {vseed}）")
+    opts = dict(title=args.title, subtitle=args.subtitle, seed=vseed, hue=args.hue)
     if kind == "city" and args.style == "walker":
         opts["snow"] = True
     if args.image:
@@ -102,7 +110,7 @@ def main() -> int:
     if not args.image:
         print("[+] サムネイルを作成中…（a/b/c の3種類）")
         bpm = f"{args.bpm or {'hard': 140, 'future': 140, 'walker': 90}.get(args.style, 128):g}"
-        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed, hue=args.hue,
+        make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=vseed, hue=args.hue,
                         scene=kind)
 
     meta = {

@@ -25,11 +25,8 @@ def _background(audio: Path, seed: int, hue: float = 0.0, t_offset: float = 1.5,
     hits = np.where(f.drop >= 0.999)[0]
     i = int(hits[0] + f.fps * t_offset) if len(hits) else f.n // 2
     i = min(i, f.n - 1)
-    if scene == "city":
-        from .scene_city import SkyCityScene
-        sc = SkyCityScene(1920, 1080, f, title=" ", subtitle="", seed=seed)
-    else:
-        sc = NeonDriveScene(1920, 1080, f, title=" ", subtitle="", seed=seed)
+    from .scenes import get_scene_class
+    sc = get_scene_class(scene if scene != "image" else "neon")(1920, 1080, f, title=" ", subtitle="", seed=seed)
     sc.post.hue[:] = hue
     f.drop[:] = 0  # 揺れ・フラッシュは入れない
     img = sc.render(i)
