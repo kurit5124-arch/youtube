@@ -169,9 +169,9 @@ function room(p) {
   box(2.1, 0.12, 1.9, std(0x5b7bd5), -2.75, 0.73, 1.35);
   box(0.9, 0.18, 0.5, std(0xffffff), -2.75, 0.78, -0.3);
   // 時計
-  const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.38, 48), std(0xffffff)); clockFace.position.set(-2.9, 3.3, -2.94); scene.add(clockFace);
+  const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.38, 48), std(0xffffff)); clockFace.position.set(-0.6, 2.55, -2.94); scene.add(clockFace);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.39, 0.035, 12, 48), std(0x333344)); ring.position.copy(clockFace.position); scene.add(ring);
-  const hand = (len, w, c) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(w, len, 0.02), new THREE.MeshBasicMaterial({ color: c })); m.position.y = len / 2; g.add(m); g.position.set(-2.9, 3.3, -2.92); scene.add(g); return g; };
+  const hand = (len, w, c) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(w, len, 0.02), new THREE.MeshBasicMaterial({ color: c })); m.position.y = len / 2; g.add(m); g.position.set(-0.6, 2.55, -2.92); scene.add(g); return g; };
   const hourH = hand(0.2, 0.05, 0x222233), minH = hand(0.31, 0.03, 0x222233);
   // 椅子と人
   box(0.7, 0.08, 0.7, std(0x444a5a), -0.6, 0.75, -1.0); box(0.7, 0.8, 0.08, std(0x444a5a), -0.6, 1.15, -0.65);
