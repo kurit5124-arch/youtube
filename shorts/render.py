@@ -149,7 +149,15 @@ def draw_scene(plan: VideoPlan, scene: Scene, idx: int, total: int, font_path: s
                 img.alpha_composite(em, (int(cx1 - em.width + 30), int(cy0 - em.height / 2 - 10)))
                 d = ImageDraw.Draw(img)
         # 選択肢
-        cf = ImageFont.truetype(font_path, 66)
+        # 長い選択肢は、枠（＋「正解」の文字）に収まるまで小さくする
+        size = 66
+        while size > 40:
+            cf = ImageFont.truetype(font_path, size)
+            room = (cx1 - cx0 - 100) - 120 - cf.getlength("正解") - 30
+            if max(cf.getlength(c) for c in scene.choices) <= room:
+                break
+            size -= 2
+        cf = ImageFont.truetype(font_path, size)
         row_h, gap_y = 100, 22
         top = cy0 + 360
         for i, ch in enumerate(scene.choices):
