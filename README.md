@@ -139,7 +139,9 @@ python scripts/build_affiliate_site.py              # まとめページを site
   `voice:`（声・高さ・加工）や `bgm:` もネタごとに変えられます。例は `topics.yaml` 末尾の「猫の自白」（犯人風の低い声）:
   `python main.py --source topics --topic-index 31`（不穏なBGMは `python scripts/make_suspense_bgm.py` で作り直せます）
 - **3Dモデルのアニメーション（`model3d: cat`）**… three.js で作った3Dの黒猫が、声に合わせて口を動かしながら登場します。
-  動きはネタごとに `anim:` で指定（`intro` 現れる / `talk` しゃべる / `purr` ゴロゴロ / `lick` 毛づくろい / `outro` 去っていく）。
+  動きはネタごとに `anim:` で指定。
+  - 黒猫 `model3d: cat` … `intro` 現れる / `talk` しゃべる / `purr` ゴロゴロ / `lick` 毛づくろい / `outro` 去っていく
+  - ミツバチ `model3d: bee` … `intro` 飛んでくる / `talk` / `jar` ハチミツのびん / `spoon` スプーン / `warn` 首を振って× / `outro` 飛び去る
   初回だけ `cd model3d && npm install && npx playwright install chromium` が必要です（無いときは絵文字イラストで代用）
 - **`assets/bgm/`** … BGM。プログラムで作曲したオリジナル曲が3曲入っていて、日替わりで使われます。`python scripts/make_bgm.py` で作り直せます。好きな曲（著作権フリーのもの）の mp3 を置けば追加できます
 - **`shorts/render.py`** … 色・レイアウト（`PALETTES` で配色を追加）

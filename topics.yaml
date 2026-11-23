@@ -458,3 +458,35 @@
   outro_emoji: 🔍
   youtube_title: 【自白】猫が人間に隠してきた3つの秘密 #shorts
   tags: [猫, 雑学, 動物, 自白, 犯人, shorts]
+
+- title: ミツバチの自白
+  header: 【犯人の自白】
+  headline: "ミツバチが隠してきた\n{ハチミツの秘密}"
+  label: 自白
+  emoji: 🐝
+  style: viral_noir
+  model3d: bee        # 3Dのミツバチが羽ばたきながらしゃべる（model3d/bee.html）
+  voice: {name: ja-JP-KeitaNeural, rate: "+5%", pitch: "-18Hz", filter: "aecho=0.8:0.5:40:0.18,lowpass=f=6500"}
+  bgm: assets/bgm_special/suspense.mp3
+  bgm_volume: 0.4
+  hook: 俺はミツバチだ。……お前らが食べている、ハチミツの秘密を「白状」しよう。
+  points:
+    - text: ハチミツはほとんど腐らない
+      label: 秘密①
+      anim: jar
+      narration: ハチミツは、ほとんど「腐らない」。糖分がとても多くて、菌が増えにくいからだ。
+      emoji: 🍯
+    - text: 1匹が一生で集めるのはスプーン1杯以下
+      label: 秘密②
+      anim: spoon
+      narration: 俺が一生かけて集めるハチミツは……「ティースプーン1杯」にも満たない。……大事に食べろよ。
+      emoji: 🥄
+    - text: 1歳未満の赤ちゃんには与えない
+      label: 秘密③
+      anim: warn
+      narration: だが、「1歳未満の赤ちゃん」には絶対に食べさせるな。乳児ボツリヌス症の原因になることがある。
+      emoji: 🚫
+  outro: ……これで全部だ。次の犯人が知りたければ、「チャンネル登録」しておけ。
+  outro_emoji: 🔍
+  youtube_title: 【自白】ミツバチが隠してきたハチミツの3つの秘密 #shorts
+  tags: [ハチミツ, ミツバチ, 雑学, 自白, 犯人, shorts]

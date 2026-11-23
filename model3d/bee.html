@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- 犯人のミツバチ（three.js で作った3Dモデル）。render.js が1コマずつ renderFrame() を呼んで画像にする -->
+<style>html,body{margin:0;background:transparent;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from "three";
+
+const SIZE = Number(new URLSearchParams(location.search).get("size") || 900);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(SIZE, SIZE);
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+
+// ---------------- ライト（暗い部屋＋背中から赤い光）
+scene.add(new THREE.AmbientLight(0x3a2c30, 1.0));
+const key = new THREE.SpotLight(0xfff1e0, 70, 20, Math.PI / 6, 0.6, 1.4);
+key.position.set(1.5, 6, 4.5); key.target.position.set(0, 1.6, 0);
+key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
+scene.add(key, key.target);
+const rimL = new THREE.PointLight(0xff1a2a, 40, 12, 1.5); rimL.position.set(-2.6, 2.8, -2.2); scene.add(rimL);
+const rimR = new THREE.PointLight(0xff3020, 30, 12, 1.5); rimR.position.set(2.6, 2.2, -2.0); scene.add(rimR);
+const front = new THREE.PointLight(0xffd080, 6, 7, 2); front.position.set(0, 1.8, 3); scene.add(front);
+
+// ---------------- 材質
+function stripeTex() {
+  const c = document.createElement("canvas"); c.width = 16; c.height = 256;
+  const g = c.getContext("2d");
+  const bands = [["#120d08", 0.0], ["#f2b705", 0.14], ["#120d08", 0.32], ["#f2b705", 0.46], ["#120d08", 0.62], ["#f2b705", 0.74], ["#120d08", 0.86]];
+  bands.forEach(([col, y], i) => { g.fillStyle = col; const y2 = i + 1 < bands.length ? bands[i + 1][1] : 1; g.fillRect(0, y * 256, 16, (y2 - y) * 256 + 1); });
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const striped = new THREE.MeshStandardMaterial({ map: stripeTex(), roughness: 0.75 });
+const fuzz = new THREE.MeshStandardMaterial({ color: 0xc98a12, roughness: 0.95 });
+const dark = new THREE.MeshStandardMaterial({ color: 0x15110d, roughness: 0.5 });
+const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffd21a, emissive: 0xffb000, emissiveIntensity: 1.6, roughness: 0.2 });
+const pupilMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1 });
+const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const mouthMat = new THREE.MeshStandardMaterial({ color: 0x3a0a10, roughness: 0.8 });
+const wingMat = new THREE.MeshPhysicalMaterial({ color: 0xdfefff, transparent: true, opacity: 0.35, roughness: 0.1,
+  side: THREE.DoubleSide, depthWrite: false, emissive: 0x334455, emissiveIntensity: 0.4 });
+const honeyMat = new THREE.MeshPhysicalMaterial({ color: 0xffa000, emissive: 0x8a4a00, emissiveIntensity: 0.9,
+  roughness: 0.15, transparent: true, opacity: 0.92 });
+const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, roughness: 0.05, depthWrite: false });
+const lidMat = new THREE.MeshStandardMaterial({ color: 0x7a3a14, roughness: 0.6 });
+const spoonMat = new THREE.MeshStandardMaterial({ color: 0xd8d8e0, metalness: 0.9, roughness: 0.25 });
+const redMat = new THREE.MeshStandardMaterial({ color: 0xff1a1a, emissive: 0xff0000, emissiveIntensity: 1.2 });
+
+const mesh = (geo, mat, parent, pos = [0, 0, 0], scale = [1, 1, 1], rot = [0, 0, 0]) => {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(...pos); m.scale.set(...scale); m.rotation.set(...rot);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m); return m;
+};
+const sph = (r = 1, s = 40) => new THREE.SphereGeometry(r, s, s);
+
+// ---------------- ミツバチ
+const bee = new THREE.Group(); scene.add(bee);       // 全体（飛ぶ位置）
+const body = new THREE.Group(); bee.add(body);        // からだの傾き
+mesh(sph(), fuzz, body, [0, 0, 0], [0.48, 0.46, 0.46]);                                   // 胸（ふわふわ）
+mesh(sph(), striped, body, [0, -0.18, -0.68], [0.5, 0.78, 0.5], [Math.PI / 2 + 0.35, 0, 0]); // しま模様のおなか
+mesh(new THREE.ConeGeometry(0.06, 0.25, 12), dark, body, [0, -0.45, -1.38], [1, 1, 1], [-Math.PI / 2 - 0.35, 0, 0]); // 針
+
+// 頭
+const head = new THREE.Group(); head.position.set(0, 0.25, 0.48); body.add(head);
+mesh(sph(), dark, head, [0, 0, 0], [0.44, 0.42, 0.4]);
+const eyes = [];
+for (const s of [-1, 1]) {
+  const e = new THREE.Group(); e.position.set(0.19 * s, 0.07, 0.31); e.rotation.y = 0.35 * s; head.add(e);
+  mesh(sph(1, 32), eyeMat, e, [0, 0, 0], [0.13, 0.13, 0.08]);
+  const pupil = mesh(sph(1, 24), pupilMat, e, [0, 0, 0.05], [0.04, 0.085, 0.04]);
+  mesh(sph(1, 12), whiteMat, e, [0.04 * s, 0.05, 0.075], [0.022, 0.022, 0.01]);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0xffaa00, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55 }));
+  glow.scale.set(0.5, 0.5, 1); glow.position.z = 0.05; e.add(glow);
+  eyes.push({ e, pupil, glow });
+}
+// 触角
+const antennae = [];
+for (const s of [-1, 1]) {
+  const a = new THREE.Group(); a.position.set(0.12 * s, 0.33, 0.2); head.add(a);
+  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.08 * s, 0.25, 0.05),
+    new THREE.Vector3(0.22 * s, 0.42, 0.12)]);
+  mesh(new THREE.TubeGeometry(curve, 16, 0.018, 8), dark, a);
+  mesh(sph(1, 16), dark, a, [0.22 * s, 0.42, 0.12], [0.05, 0.05, 0.05]);
+  antennae.push(a);
+}
+// 口
+const jaw = new THREE.Group(); jaw.position.set(0, -0.2, 0.36); head.add(jaw);
+const mouth = mesh(sph(1, 24), mouthMat, jaw, [0, 0, 0], [0.08, 0.02, 0.04]);
+
+// 羽（2対）
+function wingGeo(len, wid) {
+  const sh = new THREE.Shape(); sh.moveTo(0, 0);
+  sh.bezierCurveTo(wid, len * 0.3, wid * 0.8, len, 0, len); sh.bezierCurveTo(-wid * 0.5, len * 0.8, -wid * 0.4, len * 0.2, 0, 0);
+  return new THREE.ShapeGeometry(sh, 24);
+}
+const wings = [];
+for (const s of [-1, 1]) for (const [len, wid, z] of [[0.95, 0.42, -0.05], [0.62, 0.3, -0.3]]) {
+  const w = new THREE.Group(); w.position.set(0.18 * s, 0.32, z); body.add(w);
+  const m = new THREE.Mesh(wingGeo(len, wid), wingMat); m.rotation.set(0, 0, -s * Math.PI / 2); m.scale.x = s;
+  const holder = new THREE.Group(); holder.rotation.x = -Math.PI / 2 + 0.25; holder.add(m); w.add(holder);
+  wings.push({ w, s });
+}
+// あし（6本）。前足2本は手として使う
+const legGeo = new THREE.CapsuleGeometry(0.035, 0.42, 6, 12);
+const arms = [];
+for (const s of [-1, 1]) {
+  const arm = new THREE.Group(); arm.position.set(0.2 * s, -0.2, 0.25); body.add(arm);
+  mesh(legGeo, dark, arm, [0, -0.24, 0]); const hand = mesh(sph(1, 16), dark, arm, [0, -0.5, 0], [0.06, 0.06, 0.06]);
+  arms.push({ arm, s, hand });
+  for (const [z, rz] of [[-0.05, 0.35], [-0.3, 0.55]]) {
+    const leg = new THREE.Group(); leg.position.set(0.22 * s, -0.28, z); leg.rotation.set(0.25, 0, rz * s); body.add(leg);
+    mesh(legGeo, dark, leg, [0, -0.24, 0]);
+  }
+}
+// スプーン（右手に持つ）
+const spoon = new THREE.Group(); arms[1].arm.add(spoon); spoon.position.set(0, -0.52, 0.05);
+mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.7, 12), spoonMat, spoon, [0, 0, 0.3], [1, 1, 1], [Math.PI / 2, 0, 0]);
+mesh(sph(1, 24), spoonMat, spoon, [0, 0, 0.72], [0.13, 0.04, 0.17]);
+const drop = mesh(sph(1, 24), honeyMat, spoon, [0, 0.04, 0.72], [0.04, 0.03, 0.04]);  // スプーンの上のちょっぴりのハチミツ
+
+// ---------------- 小道具
+// ハチミツのびん
+const jar = new THREE.Group(); scene.add(jar); jar.position.set(-0.85, 0, 0.5);
+mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.95, 40), honeyMat, jar, [0, 0.5, 0]);
+mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.02, 40, 1, true), glassMat, jar, [0, 0.52, 0]);
+mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.16, 40), lidMat, jar, [0, 1.1, 0]);
+const label = mesh(new THREE.CylinderGeometry(0.555, 0.555, 0.36, 40, 1, true, -0.9, 1.8), new THREE.MeshStandardMaterial({ map: labelTex(), transparent: true }), jar, [0, 0.5, 0]);
+// 赤い「×」（警告）
+const cross = new THREE.Group(); scene.add(cross); cross.position.set(1.15, 2.55, 0.3);
+mesh(new THREE.BoxGeometry(1.5, 0.22, 0.08), redMat, cross, [0, 0, 0], [1, 1, 1], [0, 0, Math.PI / 4]);
+mesh(new THREE.BoxGeometry(1.5, 0.22, 0.08), redMat, cross, [0, 0, 0], [1, 1, 1], [0, 0, -Math.PI / 4]);
+// 足もとの影
+const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.4 }));
+shadowPlane.rotation.x = -Math.PI / 2; shadowPlane.receiveShadow = true; scene.add(shadowPlane);
+
+function glowTex() {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.3, "rgba(255,200,80,0.5)"); gr.addColorStop(1, "rgba(255,150,0,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+function labelTex() {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 96;
+  const g = c.getContext("2d"); g.fillStyle = "#f6e7c1"; g.fillRect(0, 0, 256, 96);
+  g.fillStyle = "#5a2a06"; g.font = "bold 54px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("HONEY", 128, 50);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+// ---------------- 動き
+const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+function blinkAt(t) { const p = t % 3.3; return p < 0.12 ? Math.sin((p / 0.12) * Math.PI) : 0; }
+
+/**
+ * action: intro（暗闇から飛んできてこちらを見る）/ talk（しゃべる）/ jar（ハチミツのびんを見せる）
+ *         spoon（スプーン1杯を見せる）/ warn（首を振って×）/ outro（飛び去る）
+ */
+window.renderFrame = (action, t, T, mouthOpen) => {
+  bee.position.set(0, 1.75, 0); bee.rotation.set(0, 0, 0); body.rotation.set(0.12, 0, 0);
+  head.rotation.set(0, 0, 0);
+  for (const { arm, s } of arms) arm.rotation.set(0.2, 0, 0.15 * s);
+  let squint = 0.2, eyeGlow = 1, open = mouthOpen, light = 1;
+  jar.visible = false; cross.visible = false; spoon.visible = false;
+
+  // ホバリング（ふわふわ上下）と羽ばたき
+  bee.position.y += Math.sin(t * 3.1) * 0.06;
+  body.rotation.z = Math.sin(t * 1.7) * 0.05;
+  const flap = Math.sin(t * 2 * Math.PI * 7.3);         // 30fps でもチラチラ見える速さ
+  for (const { w, s } of wings) w.rotation.set(0, 0, s * (0.15 + flap * 0.55));
+  antennae.forEach((a, i) => { a.rotation.z = Math.sin(t * 2.3 + i) * 0.12; a.rotation.x = Math.sin(t * 1.9 + i) * 0.1; });
+  head.rotation.y = Math.sin(t * 0.7) * 0.08;
+
+  let camDist = 6.4, camY = 2.0, lookY = 1.55, orbit = Math.sin(t * 0.25) * 0.12, lookX = 0;
+  if (action === "intro") {
+    const k = ease(t / 1.8);
+    bee.position.x = 3.2 * (1 - k); bee.position.z = -2.5 * (1 - k); bee.position.y += 0.8 * (1 - k);
+    bee.rotation.y = -0.9 * (1 - k);
+    light = 0.2 + 0.8 * k;
+    eyeGlow = 0.5 + 1.3 * ease((t - 1.6) / 0.4) - 0.5 * ease((t - 2.4) / 0.6); // 止まってこちらを見た瞬間にギラッ
+    camDist = 7.4 - 1.0 * ease(t / Math.max(T, 0.1));
+  } else if (action === "talk") {
+    head.rotation.x = -0.05 - open * 0.08;
+    camDist = 5.6 - 0.4 * ease(t / T); lookY = 1.7;
+  } else if (action === "jar") {
+    jar.visible = true;
+    const k = ease(t / 0.8);
+    jar.scale.setScalar(0.01 + 0.99 * ease(t / 0.5) + Math.sin(Math.min(t, 0.6) * 10) * 0.05 * (1 - ease(t / 0.6)));
+    bee.position.x = 0.6 * k; bee.rotation.y = -0.35 * k;
+    arms[0].arm.rotation.set(-1.0 * k, 0, -0.9 * k);    // 左手でびんを指す
+    arms[0].arm.rotation.z += Math.sin(t * 5) * 0.08 * k;
+    head.rotation.y = -0.25 * k + Math.sin(t * 0.7) * 0.05;
+    camDist = 6.8; lookY = 1.3; lookX = -0.15;
+  } else if (action === "spoon") {
+    spoon.visible = true;
+    const k = ease(t / 0.6);
+    arms[1].arm.rotation.set(-1.25 * k, 0, 0.55 * k);    // 右手でスプーンを前に出す
+    drop.scale.setScalar(0.035 + 0.01 * Math.sin(t * 3));
+    head.rotation.x = 0.2 * k; head.rotation.y = 0.25 * k;  // 手もとをのぞきこむ
+    squint = 0.45;
+    camDist = 5.4; lookY = 1.55; orbit = 0.2;
+  } else if (action === "warn") {
+    const k = ease((t - 0.3) / 0.4);
+    cross.visible = t > 0.3;
+    cross.scale.setScalar(0.01 + k * 0.55 * (1 + 0.12 * Math.sin(t * 8)));
+    head.rotation.y = Math.sin(t * 9) * 0.35 * ease(t / 0.3) * (1 - ease((t - 1.6) / 0.5)); // 首をブンブン振る
+    for (const { arm, s } of arms) arm.rotation.set(-1.1, 0, -0.55 * s); // 腕で×
+    squint = 0.1; eyeGlow = 1.3;
+    camDist = 6.0; lookY = 1.7;
+  } else if (action === "outro") {
+    const k = ease((t - Math.max(0, T - 2.2)) / 1.8);
+    bee.rotation.y = Math.PI * 0.8 * k;
+    bee.position.x = -2.5 * k; bee.position.z = -3.0 * k; bee.position.y += 1.2 * k;
+    light = 1 - 0.85 * k; eyeGlow = 1.2 * (1 - k);
+    camDist = 6.4;
+  }
+
+  const b = blinkAt(t + 0.4);
+  for (const { e, glow } of eyes) {
+    const c = Math.min(1, Math.max(squint, b));
+    e.scale.y = 1 - c * 0.85;
+    glow.material.opacity = 0.55 * eyeGlow * (1 - c * 0.8);
+  }
+  eyeMat.emissiveIntensity = 1.6 * eyeGlow;
+  jaw.rotation.x = open * 0.3;
+  mouth.scale.set(0.08 + open * 0.02, 0.02 + open * 0.06, 0.04);
+  mouth.position.y = -open * 0.03;
+
+  key.intensity = 70 * light; rimL.intensity = 40 * (0.5 + 0.5 * light); rimR.intensity = 30 * (0.5 + 0.5 * light);
+  front.intensity = 6 * light;
+
+  camera.position.set(Math.sin(orbit) * camDist + lookX, camY, Math.cos(orbit) * camDist);
+  camera.lookAt(lookX, lookY, 0);
+  renderer.render(scene, camera);
+  return true;
+};
+window.ready = true;
+</script>
+</body>
+</html>
