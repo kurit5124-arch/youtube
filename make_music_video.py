@@ -42,6 +42,8 @@ def main() -> int:
     ap.add_argument("--length", choices=["short", "long"],
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
+    ap.add_argument("--vocals", action="store_true",
+                    help="walker スタイルに合成の女性ボーカルを入れる（既定は歌なし。合成の歌声は機械っぽさが残るため）")
     ap.add_argument("--voice", default="en-US-JennyNeural", help="ボーカルの声（edge-tts の声の名前。walker スタイルで使う）")
     ap.add_argument("--scene", choices=["auto", "neon", "city", "aurora", "space"], default="auto",
                     help="動く絵 auto=毎回ちがう背景（既定） / neon=夕日とグリッドと車 / city=夜空と海辺の街 / "
@@ -75,7 +77,8 @@ def main() -> int:
         print(f"[1/3] 作曲中…（{args.style}, seed={args.seed}, {length}）")
         if args.style == "walker":
             compose_walker(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length,
-                           key=-6 if args.key is None else args.key, voice=args.voice)
+                           key=-6 if args.key is None else args.key, voice=args.voice,
+                           vocals=args.vocals)
         elif args.style == "future":
             compose_future(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length,
                            key=-4 if args.key is None else args.key)

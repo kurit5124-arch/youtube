@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from .compose import SR, adsr, crash, hat, highpass, impact, lowpass, mtof, piano, riser, snare
-from .future import _master, big_clap, future_chord, kick_clean, reverse_swell, saw_var, shaker
+from .future import _master, bell, big_clap, future_chord, kick_clean, pluck, reverse_swell, saw_var, shaker
 from .vocals import _phrases, render_lyrics
 
 # A マイナー基準（あとで key で移調）
@@ -87,7 +87,7 @@ def _lead_rhythm(chorus):
     return out
 
 
-def walker_lead(m, dur, prev=None):
+def walker_lead(m, dur, prev=None, bright=4200):
     """柔らかく伸びるノコギリ波のリード（前の音からすべる）"""
     n = int(dur * SR)
     t = np.arange(n) / SR
@@ -95,7 +95,7 @@ def walker_lead(m, dur, prev=None):
     f0 = mtof(prev) if prev is not None else f1
     f = f1 + (f0 - f1) * np.exp(-t * 60)
     s = saw_var(f) + saw_var(f * 1.006, 0.3) + saw_var(f * 0.994, 0.6) + 0.4 * saw_var(f * 0.5, 0.1)
-    dark, br = lowpass(s, 900), lowpass(s, 4200, reso=0.4)
+    dark, br = lowpass(s, 900), lowpass(s, bright, reso=0.4)
     s = dark + (br - dark) * (0.55 + 0.45 * np.exp(-t * 6))
     return s / 3 * adsr(n, 0.008, 0.15, 0.75, 0.06)
 
@@ -169,7 +169,7 @@ SECTIONS = [("intro", 4), ("verse", 8), ("build", 4), ("chorus", 8), ("drop", 8)
 
 def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "SNOWLIGHT",
                    key: int = -6, length: str = "long", voice: str = "en-US-JennyNeural",
-                   stems: Path | None = None) -> Path:
+                   stems: Path | None = None, vocals: bool = False) -> Path:
     bpm = bpm or 90
     rng = np.random.default_rng(seed)
     beat = 60 / bpm
@@ -305,130 +305,188 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
             prev = None
             for p, ln, m in tr(_lead_rhythm(CHORUS)):
                 at = sec_t + p * beat
-                put("lead", walker_lead(m, ln * beat * 0.98, prev), at, 0.3, send=0.35, dly=0.35)
+                put("lead", walker_lead(m, ln * beat * 0.98, prev), at, 1.5, send=0.35, dly=0.35)
                 if name == "drop2":
-                    put("lead", walker_lead(m + 12, ln * beat * 0.98, prev + 12 if prev else None), at, 0.12,
+                    put("lead", walker_lead(m + 12, ln * beat * 0.98, prev + 12 if prev else None), at, 0.4,
                         pan=0.3, send=0.4, dly=0.3)
                 prev = m
 
-    # ===== ボーカル（EDM の定番の作り方）=====
-    print("  ボーカルを合成中…")
-    vb = {k: np.zeros((N, 2)) for k in ("lead", "stack", "bgv", "chop")}
-    vsend = np.zeros((N, 2))   # ボーカル専用の響き（プレート・リバーブ）へ
-    vthrow = np.zeros((N, 2))  # ボーカル専用のこだま（ディレイ）へ
+        # 歌なし版：歌のメロディを楽器で弾く
+        if not vocals:
+            if name in ("verse", "verse2"):
+                mel = tr([n for _, ns in VERSE1 for n in ns])
+                for k, (p, ln, m) in enumerate(mel):
+                    at = sec_t + p * beat + rng.normal(0, 0.006)
+                    # フレーズの中で少しふくらむ強弱（人が弾くように）
+                    vel = float(np.clip(0.5 + 0.2 * np.sin(np.pi * ((p % 8) / 8)) + rng.normal(0, 0.04), 0.35, 0.85))
+                    if name == "verse":
+                        put("lead", piano(m + 12, ln * beat + 0.5, vel), at, 1.5, pan=0.1, send=0.5, dly=0.2)
+                    else:
+                        put("lead", pluck(m + 12, ln * beat + 0.35), at, 1.2 * (0.7 + 0.5 * vel), pan=-0.1, send=0.45, dly=0.3)
+                        put("lead", piano(m + 24, ln * beat + 0.4, vel * 0.7), at + 0.01, 0.5, pan=0.3, send=0.5)
+            if name in ("chorus", "chorus2"):
+                prev = None
+                for p, ln, m in tr([n for _, ns in CHORUS for n in ns]):
+                    at = sec_t + p * beat
+                    put("lead", walker_lead(m + 12, ln * beat * 1.02, prev, bright=2600), at, 2.2, send=0.45, dly=0.35)
+                    put("lead", bell(m + 24, ln * beat + 0.5), at, 0.3, pan=0.3, send=0.5)
+                    if name == "chorus2":
+                        h = _third_below(m - key) + key + 12
+                        put("lead", walker_lead(h, ln * beat * 1.02, None, bright=2200), at, 0.75, pan=-0.35, send=0.45)
+                    prev = m + 12
+            if name == "outro":
+                for p, ln, m in tr([n for _, ns in CHORUS for n in ns if n[0] >= 24]):
+                    put("lead", piano(m + 12, ln * beat + 0.8, 0.45), sec_t + (p - 24) * beat, 1.3, send=0.7, dly=0.4)
 
-    def vput(group, seg, t, g, pan=0.0, send=0.0, throw=0.0):
-        i = int(max(0, t) * SR)
-        if i >= N or len(seg) == 0:
-            return
-        st2 = np.stack([seg * np.sqrt(1 - pan), seg * np.sqrt(1 + pan)], 1) * g
-        j = min(N, i + len(st2))
-        vb[group][i:j] += st2[: j - i]
-        if send:
-            vsend[i:j] += st2[: j - i] * send
-        if throw:
-            vthrow[i:j] += st2[: j - i] * throw
+    if vocals:
+        # ===== ボーカル（EDM の定番の作り方）=====
+        print("  ボーカルを合成中…")
+        vb = {k: np.zeros((N, 2)) for k in ("lead", "stack", "bgv", "chop")}
+        vsend = np.zeros((N, 2))   # ボーカル専用の響き（プレート・リバーブ）へ
+        vthrow = np.zeros((N, 2))  # ボーカル専用のこだま（ディレイ）へ
 
-    ir_v = _plate_ir(rng, 2.4)
-    others = [v for v in ("en-US-AriaNeural", "en-GB-SoniaNeural", "en-US-JennyNeural") if v != voice][:2]
-    chorus_takes = {}
-    for st, lines, kind in vocal_parts:
-        chorus = kind != "verse"
-        g = 0.8 if not chorus else 2.1
-        lead = render_lyrics(lines, beat, voice=voice, transpose=key, vib_depth=0.05)
-        for (t, seg), ph in zip(lead, _phrases(lines)):
-            # Aメロは近く・控えめな響き、サビは広く
-            vput("lead", seg, st + t, g, send=0.35 if not chorus else 0.5)
-            # 行の最後の語だけ、こだまを大きく残す（ディレイ・スロー）
-            k0 = int((ph[-1][1][0][0] * beat - t) * SR)
-            tail = seg[max(0, k0):]
-            i = int(max(0, st + t) * SR) + max(0, k0)
-            j = min(N, i + len(tail))
-            vthrow[i:j] += np.stack([tail, tail], 1)[: j - i] * g * 0.9
-        if chorus:
-            chorus_takes[kind] = (st, lead)
-            # 逆再生の響きが、サビの最初の言葉に吸い込まれる
-            t0_, seg0 = lead[0]
-            n0 = int((lines[0][1][0][0] * beat - t0_) * SR)
-            head = seg0[max(0, n0): max(0, n0) + int(0.5 * SR)]
-            if len(head):
-                wet = np.convolve(head, ir_v[: int(1.8 * SR)])[: int(2.0 * SR)]
-                rev = wet[::-1] * np.linspace(0, 1, len(wet)) ** 2
-                rev = highpass(rev, 300)
-                rev /= np.max(np.abs(rev)) + 1e-9
-                vput("bgv", rev * 0.18, st + lines[0][1][0][0] * beat - len(rev) / SR, 1.0, send=0.2)
-            # 左右に別の歌い手を重ねる（ダブル）
-            for v2, pan, sd in ((others[0], -0.6, 11), (others[1], 0.6, 23)):
-                for t, seg in render_lyrics(lines, beat, voice=v2, transpose=key, vib_depth=0.04, seed=sd):
-                    vput("stack", seg, st + t, g * 0.36, pan=pan, send=0.4)
-            # 1オクターブ下の声で厚みを（小さく、真ん中に）
-            low = [(w, [(p, ln, m - 12) for p, ln, m in ns]) for w, ns in lines]
-            for t, seg in render_lyrics(low, beat, voice=voice, transpose=key, vib_depth=0.03, seed=31):
-                vput("stack", lowpass(seg, 5000), st + t, g * 0.22, send=0.3)
-            # 後ろで「オー」のコーラスがコードを支える
-            for b in range(8):
-                r, q = prog[b % 4]
-                tones = sorted(((r + i - 57) % 12) + 57 for i in TRI[q])  # A3〜G#4 あたりの和音
-                for vi, m in enumerate(tones):
-                    for t, seg in render_lyrics([("oh", [(b * 4, 3.8, m - key)])], beat, voice=others[vi % 2],
-                                                transpose=key, vib_depth=0.03, seed=100 + b * 3 + vi):
-                        vput("bgv", lowpass(seg, 6000), st + t, 0.25, pan=(-0.7, 0.0, 0.7)[vi], send=0.9)
-        if kind == "chorus2":  # 2回目のサビは3度下でハモる
-            harm = [(w, [(p, ln, _third_below(m)) for p, ln, m in ns]) for w, ns in lines]
-            for t, seg in render_lyrics(harm, beat, voice=others[0], transpose=key, vib_depth=0.04, seed=41):
-                vput("stack", seg, st + t, 0.95, pan=0.3, send=0.45)
-    # アウトロ：最後のフレーズをもう一度、遠くに
-    out_t = [x["start"] for x in timeline if x["name"] == "outro"][0]
-    last = [(w, [(p - 24, ln, m) for p, ln, m in ns]) for w, ns in CHORUS if ns[0][0] >= 24]
-    for t, seg in render_lyrics(last, beat, voice=voice, transpose=key, seed=77, vib_depth=0.05):
-        vput("lead", lowpass(seg, 3500), out_t + t, 0.6, send=0.9, throw=0.5)
-    # ドロップ：直前のサビの歌声を細かく刻んで、楽器のように使う（ボーカルチョップ）
-    gate_pat = [1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1]
-    for x in timeline:
-        if x["name"] in ("drop", "drop2"):
-            src_kind = "chorus" if x["name"] == "drop" else "chorus2"
-            if src_kind not in chorus_takes:
-                continue
-            cst, takes = chorus_takes[src_kind]
-            for t, seg in takes:
-                n = len(seg)
-                tt = (np.arange(n) / SR + t)  # サビの頭からの秒
-                step = np.floor(tt / (beat / 4)).astype(int) % 16
-                gate = np.array(gate_pat)[step].astype(float)
-                gate = np.convolve(gate, np.ones(220) / 220, mode="same")  # 5ミリ秒でなめらかに
-                chop = highpass(lowpass(seg * gate, 7000), 250)
-                vput("chop", chop, x["start"] + t, 1.6, pan=0.15, send=0.5, throw=0.3)
+        def vput(group, seg, t, g, pan=0.0, send=0.0, throw=0.0):
+            i = int(max(0, t) * SR)
+            if i >= N or len(seg) == 0:
+                return
+            st2 = np.stack([seg * np.sqrt(1 - pan), seg * np.sqrt(1 + pan)], 1) * g
+            j = min(N, i + len(st2))
+            vb[group][i:j] += st2[: j - i]
+            if send:
+                vsend[i:j] += st2[: j - i] * send
+            if throw:
+                vthrow[i:j] += st2[: j - i] * throw
+
+        ir_v = _plate_ir(rng, 2.4)
+        others = [v for v in ("en-US-AriaNeural", "en-GB-SoniaNeural", "en-US-JennyNeural") if v != voice][:2]
+        chorus_takes = {}
+        for st, lines, kind in vocal_parts:
+            chorus = kind != "verse"
+            g = 0.8 if not chorus else 2.1
+            lead = render_lyrics(lines, beat, voice=voice, transpose=key, vib_depth=0.05)
+            for (t, seg), ph in zip(lead, _phrases(lines)):
+                # Aメロは近く・控えめな響き、サビは広く
+                vput("lead", seg, st + t, g, send=0.35 if not chorus else 0.5)
+                # 行の最後の語だけ、こだまを大きく残す（ディレイ・スロー）
+                k0 = int((ph[-1][1][0][0] * beat - t) * SR)
+                tail = seg[max(0, k0):]
+                i = int(max(0, st + t) * SR) + max(0, k0)
+                j = min(N, i + len(tail))
+                vthrow[i:j] += np.stack([tail, tail], 1)[: j - i] * g * 0.9
+            if chorus:
+                chorus_takes[kind] = (st, lead)
+                # 逆再生の響きが、サビの最初の言葉に吸い込まれる
+                t0_, seg0 = lead[0]
+                n0 = int((lines[0][1][0][0] * beat - t0_) * SR)
+                head = seg0[max(0, n0): max(0, n0) + int(0.5 * SR)]
+                if len(head):
+                    wet = np.convolve(head, ir_v[: int(1.8 * SR)])[: int(2.0 * SR)]
+                    rev = wet[::-1] * np.linspace(0, 1, len(wet)) ** 2
+                    rev = highpass(rev, 300)
+                    rev /= np.max(np.abs(rev)) + 1e-9
+                    vput("bgv", rev * 0.18, st + lines[0][1][0][0] * beat - len(rev) / SR, 1.0, send=0.2)
+                # 左右に別の歌い手を重ねる（ダブル）
+                for v2, pan, sd in ((others[0], -0.6, 11), (others[1], 0.6, 23)):
+                    for t, seg in render_lyrics(lines, beat, voice=v2, transpose=key, vib_depth=0.04, seed=sd):
+                        vput("stack", seg, st + t, g * 0.36, pan=pan, send=0.4)
+                # 1オクターブ下の声で厚みを（小さく、真ん中に）
+                low = [(w, [(p, ln, m - 12) for p, ln, m in ns]) for w, ns in lines]
+                for t, seg in render_lyrics(low, beat, voice=voice, transpose=key, vib_depth=0.03, seed=31):
+                    vput("stack", lowpass(seg, 5000), st + t, g * 0.22, send=0.3)
+                # 後ろで「オー」のコーラスがコードを支える
+                for b in range(8):
+                    r, q = prog[b % 4]
+                    tones = sorted(((r + i - 57) % 12) + 57 for i in TRI[q])  # A3〜G#4 あたりの和音
+                    for vi, m in enumerate(tones):
+                        for t, seg in render_lyrics([("oh", [(b * 4, 3.8, m - key)])], beat, voice=others[vi % 2],
+                                                    transpose=key, vib_depth=0.03, seed=100 + b * 3 + vi):
+                            vput("bgv", lowpass(seg, 6000), st + t, 0.25, pan=(-0.7, 0.0, 0.7)[vi], send=0.9)
+            if kind == "chorus2":  # 2回目のサビは3度下でハモる
+                harm = [(w, [(p, ln, _third_below(m)) for p, ln, m in ns]) for w, ns in lines]
+                for t, seg in render_lyrics(harm, beat, voice=others[0], transpose=key, vib_depth=0.04, seed=41):
+                    vput("stack", seg, st + t, 0.95, pan=0.3, send=0.45)
+        # アウトロ：最後のフレーズをもう一度、遠くに
+        out_t = [x["start"] for x in timeline if x["name"] == "outro"][0]
+        last = [(w, [(p - 24, ln, m) for p, ln, m in ns]) for w, ns in CHORUS if ns[0][0] >= 24]
+        for t, seg in render_lyrics(last, beat, voice=voice, transpose=key, seed=77, vib_depth=0.05):
+            vput("lead", lowpass(seg, 3500), out_t + t, 0.6, send=0.9, throw=0.5)
+        # ドロップ：直前のサビの歌声を細かく刻んで、楽器のように使う（ボーカルチョップ）
+        gate_pat = [1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1]
+        for x in timeline:
+            if x["name"] in ("drop", "drop2"):
+                src_kind = "chorus" if x["name"] == "drop" else "chorus2"
+                if src_kind not in chorus_takes:
+                    continue
+                cst, takes = chorus_takes[src_kind]
+                for t, seg in takes:
+                    n = len(seg)
+                    tt = (np.arange(n) / SR + t)  # サビの頭からの秒
+                    step = np.floor(tt / (beat / 4)).astype(int) % 16
+                    gate = np.array(gate_pat)[step].astype(float)
+                    gate = np.convolve(gate, np.ones(220) / 220, mode="same")  # 5ミリ秒でなめらかに
+                    chop = highpass(lowpass(seg * gate, 7000), 250)
+                    vput("chop", chop, x["start"] + t, 1.6, pan=0.15, send=0.5, throw=0.3)
 
     # ポンピング
     for k, d in (("pad", 0.6), ("bass", 0.8), ("lead", 0.2)):
         bus[k] *= (1 - d + d * pump)[:, None]
 
-    # ===== ボーカルの音作り =====
-    # EQ：低音のノイズとこもりを削り、声のはっきりした所と空気感を持ち上げる
-    for gname in ("lead", "stack", "bgv", "chop"):
-        vb[gname] = _vocal_eq(vb[gname])
-    # 声の大きさをそろえる（ゆっくりのコンプレッサー）
-    dry = vb["lead"] + vb["stack"]
-    lvl = np.sqrt(np.convolve((dry ** 2).mean(axis=1), np.ones(882) / 882, mode="same")) + 1e-7
-    thr = np.percentile(lvl[lvl > 1e-4], 70) if np.any(lvl > 1e-4) else 1.0
-    gain = np.where(lvl > thr, (lvl / thr) ** -0.3, 1.0)
-    gain = np.convolve(gain, np.ones(13230) / 13230, mode="same")
-    for gname in ("lead", "stack"):
-        vb[gname] *= gain[:, None]
-    # 響きとこだまは、声が鳴っている間は小さく、合間で大きく（ダッキング）
-    lead_env = np.sqrt(np.convolve((vb["lead"] ** 2).mean(axis=1), np.ones(882) / 882, mode="same"))
-    duck = _duck_curve(lead_env, depth=0.6)
-    v_wet = np.zeros((N, 2))
-    nfft = 1 << (N + len(ir_v)).bit_length()
-    pre = int(0.04 * SR)  # 40ミリ秒あとから響き始める（声がにごらない）
-    for ch in range(2):
-        src = np.zeros(N)
-        src[pre:] = (vsend[:, ch] + vb["bgv"][:, ch] * 0.5)[:-pre]
-        ir = ir_v if ch == 0 else np.roll(ir_v, int(0.007 * SR))
-        v_wet[:, ch] = np.fft.irfft(np.fft.rfft(src, nfft) * np.fft.rfft(ir, nfft), nfft)[:N]
-    v_dly = _pingpong(vthrow + vsend * 0.3, int(beat * SR), fb=0.45)
-    bus["vox"] = (vb["lead"] + vb["stack"] + vb["bgv"] + vb["chop"]
-                  + (v_wet * 0.6 + v_dly * 0.85) * duck[:, None])
+    if vocals:
+        # ===== ボーカルの音作り =====
+        # EQ：低音のノイズとこもりを削り、声のはっきりした所と空気感を持ち上げる
+        for gname in ("lead", "stack", "bgv", "chop"):
+            vb[gname] = _vocal_eq(vb[gname])
+        # 声の大きさをそろえる（ゆっくりのコンプレッサー）
+        dry = vb["lead"] + vb["stack"]
+        lvl = np.sqrt(np.convolve((dry ** 2).mean(axis=1), np.ones(882) / 882, mode="same")) + 1e-7
+        thr = np.percentile(lvl[lvl > 1e-4], 70) if np.any(lvl > 1e-4) else 1.0
+        gain = np.where(lvl > thr, (lvl / thr) ** -0.3, 1.0)
+        gain = np.convolve(gain, np.ones(13230) / 13230, mode="same")
+        for gname in ("lead", "stack"):
+            vb[gname] *= gain[:, None]
+        # 響きとこだまは、声が鳴っている間は小さく、合間で大きく（ダッキング）
+        lead_env = np.sqrt(np.convolve((vb["lead"] ** 2).mean(axis=1), np.ones(882) / 882, mode="same"))
+        duck = _duck_curve(lead_env, depth=0.6)
+        v_wet = np.zeros((N, 2))
+        nfft = 1 << (N + len(ir_v)).bit_length()
+        pre = int(0.04 * SR)  # 40ミリ秒あとから響き始める（声がにごらない）
+        for ch in range(2):
+            src = np.zeros(N)
+            src[pre:] = (vsend[:, ch] + vb["bgv"][:, ch] * 0.5)[:-pre]
+            ir = ir_v if ch == 0 else np.roll(ir_v, int(0.007 * SR))
+            v_wet[:, ch] = np.fft.irfft(np.fft.rfft(src, nfft) * np.fft.rfft(ir, nfft), nfft)[:N]
+        v_dly = _pingpong(vthrow + vsend * 0.3, int(beat * SR), fb=0.45)
+        bus["vox"] = (vb["lead"] + vb["stack"] + vb["bgv"] + vb["chop"]
+                      + (v_wet * 0.6 + v_dly * 0.85) * duck[:, None])
+
+    if not vocals:
+        # 歌なし版：メロディを歌声と同じように扱う
+        # ① 強すぎる音（ピアノの弾いた瞬間など）だけをおさえるコンプレッサー
+        mel = bus["lead"]
+        h = int(SR * 0.005)
+        nbk = N // h
+        e = np.sqrt(np.mean((mel[:nbk * h] ** 2).mean(axis=1).reshape(nbk, h), axis=1)) + 1e-7
+        act = e[e > e.max() * 0.03]
+        thr = np.percentile(act, 60) if len(act) else 1.0
+        target = np.where(e > thr, (e / thr) ** (-2 / 3), 1.0)  # 比率 3:1
+        g = np.ones(nbk)
+        v = 1.0
+        for i in range(nbk):
+            c = 0.6 if target[i] < v else 0.04  # すばやく下げて、ゆっくり戻す
+            v += (target[i] - v) * c
+            g[i] = v
+        bus["lead"] = mel * np.interp(np.arange(N), np.arange(nbk) * h + h / 2, g)[:, None]
+        # ② 響きとこだまは、メロディが鳴っている間は小さく、休みで大きく
+        mel_env = np.sqrt(np.convolve((bus["lead"] ** 2).mean(axis=1), np.ones(882) / 882, mode="same"))
+        mduck = _duck_curve(mel_env, depth=0.6)
+        ir_m = _plate_ir(rng, 2.8)
+        nfft2 = 1 << (N + len(ir_m)).bit_length()
+        m_wet = np.zeros((N, 2))
+        for ch in range(2):
+            ir = ir_m if ch == 0 else np.roll(ir_m, int(0.009 * SR))
+            m_wet[:, ch] = np.fft.irfft(np.fft.rfft(bus["lead"][:, ch], nfft2) * np.fft.rfft(ir, nfft2), nfft2)[:N]
+        m_dly = _pingpong(bus["lead"], int(beat * SR), fb=0.5)
+        bus["lead"] = bus["lead"] + (m_wet * 0.5 + m_dly * 0.6) * mduck[:, None]
 
     # ディレイ（付点8分、左右交互）
     d = int(beat * 0.75 * SR)
