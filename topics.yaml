@@ -433,6 +433,7 @@
   label: 自白
   emoji: 🐈‍⬛
   style: viral_noir
+  model3d: cat        # 3Dの黒猫が声に合わせてしゃべる（model3d/cat.html）
   voice: {name: ja-JP-KeitaNeural, rate: "+5%", pitch: "-22Hz", filter: "aecho=0.8:0.5:40:0.18,lowpass=f=6500"}
   bgm: assets/bgm_special/suspense.mp3
   bgm_volume: 0.4
@@ -440,14 +441,17 @@
   points:
     - text: 「ニャー」は人間専用
       label: 秘密①
+      anim: talk
       narration: あの「ニャー」という声……大人の猫同士では、ほとんど使わない。「人間を動かすため」の声なんだよ。
       emoji: 🐈
     - text: ゴロゴロ＝ご機嫌とは限らない
       label: 秘密②
+      anim: purr
       narration: 喉のゴロゴロは、ご機嫌の合図……とは限らない。「具合が悪いとき」にも、鳴らすことがある。
       emoji: 😿
     - text: 舌のトゲはブラシ代わり
       label: 秘密③
+      anim: lick
       narration: 舌がザラザラなのは、細かい「トゲ」が並んでいるからだ。これが「ブラシ」の代わりになる。
       emoji: 👅
   outro: ……これで全部だ。次の犯人が知りたければ、「チャンネル登録」しておけ。

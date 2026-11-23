@@ -50,6 +50,12 @@ jobs:
       - name: Python ライブラリを入れる
         run: pip install -r requirements.txt
 
+      - name: 3Dモデル用（three.js＋ヘッドレス Chromium）を入れる
+        run: |
+          cd model3d
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
       - name: 動画を作る（＋投稿）
         env:
           IN_SOURCE: ${{ inputs.source }}

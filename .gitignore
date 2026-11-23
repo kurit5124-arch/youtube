@@ -5,3 +5,4 @@ client_secret*.json
 token*.json
 .env
 site/
+model3d/node_modules/

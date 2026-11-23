@@ -19,6 +19,7 @@ class Scene:
     countdown: int | None = None # カウントダウン表示（3,2,1）
     emoji: str = ""              # このシーンのイラスト
     subtext: str = ""            # text の下に小さめに出す説明
+    anim: str = ""               # 3Dモデルの動き（intro / talk / purr / lick / outro）
 
 
 @dataclass
@@ -39,4 +40,5 @@ class VideoPlan:
     style: str = ""              # 見た目（"" = いつもの / "noir" = 犯人の自白風）
     bgm: str = ""                # この動画だけ使う BGM ファイル（空なら bgm_dir から日替わり）
     bgm_volume: float | None = None
-    headline: str = ""           # style: viral のとき画面上部に出しっぱなしにするタイトル（{ }で強調）
+    headline: str = ""
+    model3d: str = ""            # 3Dモデルのアニメーションを入れる（model3d/<名前>.html。例: cat）""           # style: viral のとき画面上部に出しっぱなしにするタイトル（{ }で強調）

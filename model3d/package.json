@@ -1,0 +1,9 @@
+{
+  "name": "shorts-model3d",
+  "private": true,
+  "description": "ショート動画に入れる3Dモデルのアニメーション（three.js をヘッドレス Chromium で描画）",
+  "dependencies": {
+    "three": "0.170.0",
+    "playwright": "1.63.0"
+  }
+}

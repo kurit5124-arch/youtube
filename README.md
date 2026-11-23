@@ -138,6 +138,9 @@ python scripts/build_affiliate_site.py              # まとめページを site
 - **伸びる雑学ショートの見た目（`style: viral` / `viral_noir`）**… 上にタイトルを出しっぱなし、中央に大きなイラスト、声に合わせて切り替わる字幕（「」の言葉は黄色）。
   `voice:`（声・高さ・加工）や `bgm:` もネタごとに変えられます。例は `topics.yaml` 末尾の「猫の自白」（犯人風の低い声）:
   `python main.py --source topics --topic-index 31`（不穏なBGMは `python scripts/make_suspense_bgm.py` で作り直せます）
+- **3Dモデルのアニメーション（`model3d: cat`）**… three.js で作った3Dの黒猫が、声に合わせて口を動かしながら登場します。
+  動きはネタごとに `anim:` で指定（`intro` 現れる / `talk` しゃべる / `purr` ゴロゴロ / `lick` 毛づくろい / `outro` 去っていく）。
+  初回だけ `cd model3d && npm install && npx playwright install chromium` が必要です（無いときは絵文字イラストで代用）
 - **`assets/bgm/`** … BGM。プログラムで作曲したオリジナル曲が3曲入っていて、日替わりで使われます。`python scripts/make_bgm.py` で作り直せます。好きな曲（著作権フリーのもの）の mp3 を置けば追加できます
 - **`shorts/render.py`** … 色・レイアウト（`PALETTES` で配色を追加）
 - **`shorts/illust.py`** … 背景イラスト（Noto Color Emoji）。言葉とイラストの対応表 `KEYWORDS` に追加できます

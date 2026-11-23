@@ -282,7 +282,7 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
     main_em = t.get("emoji") or illust.pick_one(title, fallback="💡")
     hook = t.get("hook", f"{title}、知ってた？")
     scenes = [Scene(kind="hook", label=t.get("label", "雑学"), text=t.get("hook_text", title), emoji=main_em,
-                    narration=_sentence(hook))]
+                    narration=_sentence(hook), anim=t.get("hook_anim", "intro"))]
     point_ems = []
     for n, p in enumerate(t["points"], 1):
         if isinstance(p, dict):
@@ -293,9 +293,11 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
             em = illust.pick_one(text, fallback=main_em)
         point_ems.append(em)
         lab = p.get("label") if isinstance(p, dict) and p.get("label") else f"{t.get('point_label', 'その')}{n}"
-        scenes.append(Scene(kind="item", label=lab, text=text, emoji=em, narration=_sentence(narr)))
+        scenes.append(Scene(kind="item", label=lab, text=text, emoji=em, narration=_sentence(narr),
+                            anim=(p.get("anim") if isinstance(p, dict) else None) or "talk"))
     scenes.append(Scene(kind="outro", label=t.get("outro_label", "SEE YOU"),
                         text=t.get("outro_text", "チャンネル登録\nしてね！"), emoji=t.get("outro_emoji", "🙌"),
+                        anim=t.get("outro_anim", "outro"),
                         narration=t.get("outro", cfg.get("outro_narration", "明日もお楽しみに！チャンネル登録よろしくお願いします。"))))
 
     tags = t.get("tags", ["雑学", "shorts"])
@@ -308,7 +310,8 @@ def plan_topic(date: dt.date, cfg: dict, topics_path: Path, index: int | None = 
                      emojis=list(dict.fromkeys([main_em] + point_ems)),
                      products=list(t.get("products") or []),
                      voice=dict(t.get("voice") or {}), style=t.get("style", ""), bgm=t.get("bgm", ""),
-                     bgm_volume=t.get("bgm_volume"), headline=t.get("headline", ""))
+                     bgm_volume=t.get("bgm_volume"), headline=t.get("headline", ""),
+                     model3d=t.get("model3d", ""))
 
 
 def make_plan(source: str, date: dt.date, cfg: dict, root: Path, topic_index: int | None = None,

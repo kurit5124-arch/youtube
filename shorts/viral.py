@@ -17,6 +17,8 @@
 """
 from __future__ import annotations
 
+import json
+import math
 import random
 import re
 import subprocess
@@ -165,16 +167,17 @@ def _base(plan: VideoPlan, th: dict, font_path: str) -> Image.Image:
     return img
 
 
-def _scene_layer(base, scene, th, font_path):
+def _scene_layer(base, scene, th, font_path, with_emoji=True):
     img = base.copy()
     d = ImageDraw.Draw(img)
     if scene.label and scene.kind == "item":
         bf = ImageFont.truetype(font_path, 62)
         bw = bf.getlength(scene.label) + 80
-        d.rounded_rectangle([W / 2 - bw / 2, 560, W / 2 + bw / 2, 660], radius=50, fill=th["badge"],
+        by = 610 if with_emoji else 600  # 3Dのときは猫の頭にかからないよう上に
+        d.rounded_rectangle([W / 2 - bw / 2, by - 50, W / 2 + bw / 2, by + 50], radius=50, fill=th["badge"],
                             outline=(255, 255, 255), width=6)
-        d.text((W / 2, 610), scene.label, font=bf, fill=(255, 255, 255), anchor="mm")
-    if scene.emoji:
+        d.text((W / 2, by), scene.label, font=bf, fill=(255, 255, 255), anchor="mm")
+    if scene.emoji and with_emoji:
         em = illust.image(scene.emoji, 540)
         if em:
             sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -231,6 +234,49 @@ def _boom(path: Path) -> None:
                     "lowpass=f=180,volume=2.2", "-ac", "1", str(path)], check=True)
 
 
+# ------------------------------------------------------------ 3Dモデル
+MODEL_DIR = Path(__file__).resolve().parent.parent / "model3d"
+MODEL_PX, MODEL_Y = 1000, 540  # 画面に置く大きさと上端の位置
+
+
+def _mouth_curve(words, n_frames: int, lead: float) -> list[float]:
+    """単語を話している間だけ口をパクパク開ける（0〜1）。"""
+    out = []
+    for f in range(n_frames):
+        t = f / FPS - lead
+        v = 0.0
+        for off, d, _ in words:
+            if off <= t <= off + d + 0.04:
+                syl = max(1, round(d / 0.13))  # だいたい1音ごとに1回開く
+                v = abs(math.sin(math.pi * syl * (t - off) / max(d, 0.05))) * 0.9
+                break
+        out.append(round(v, 3))
+    return out
+
+
+def _render_3d(plan: VideoPlan, jobs, workdir: Path, lead: float) -> dict[int, Path]:
+    """model3d/render.js で各シーンの3Dアニメーションを透過PNGの連番にする。失敗したらイラストで代用。"""
+    html = MODEL_DIR / f"{plan.model3d}.html"
+    if not html.exists() or not (MODEL_DIR / "node_modules" / "three").exists():
+        print(f"[warn] 3Dモデルを描けません（{html.name} か model3d/node_modules がない。cd model3d && npm ci）。イラストで代用します")
+        return {}
+    scenes, dirs = [], {}
+    for i, (s, _audio, seg_dur, _dur, words) in enumerate(jobs):
+        d = workdir / f"model_{i:02d}"
+        n = max(1, round(seg_dur * FPS))
+        scenes.append({"action": s.anim or "talk", "duration": seg_dur, "out": str(d),
+                       "mouth": _mouth_curve(words, n, lead) if (s.anim or "talk") not in ("purr",) else []})
+        dirs[i] = d
+    job = workdir / "model3d_job.json"
+    job.write_text(json.dumps({"model": plan.model3d, "size": MODEL_PX, "fps": FPS, "scenes": scenes}), encoding="utf-8")
+    try:
+        subprocess.run(["node", str(MODEL_DIR / "render.js"), str(job)], check=True, timeout=1800)
+    except Exception as e:  # noqa: BLE001
+        print(f"[warn] 3Dの描画に失敗したのでイラストで代用します: {e}")
+        return {}
+    return dirs
+
+
 # ------------------------------------------------------------ 本体
 def build(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_silent: bool = False) -> Path:
     th = THEMES.get(plan.style, THEMES["viral"])
@@ -241,7 +287,8 @@ def build(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_silent: bo
     boom = workdir / "boom.wav"
     _boom(boom)
 
-    segs, total = [], 0.0
+    # 1) 音声と字幕
+    jobs = []
     for i, s in enumerate(plan.scenes):
         voice = workdir / f"voice_{i:02d}.mp3"
         dur, words = tts.synthesize_words(s.narration, voice, cfg, allow_silent)
@@ -250,16 +297,30 @@ def build(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_silent: bo
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(boom), "-i", str(voice),
                         "-filter_complex", f"[1]adelay={int(lead * 1000)}[v];[0][v]amix=inputs=2:normalize=0:duration=longest,"
                         f"apad,atrim=0:{seg_dur:.3f}", "-ar", "44100", "-ac", "2", str(audio)], check=True)
+        jobs.append((s, audio, seg_dur, dur, words))
 
-        layer = _scene_layer(base, s, th, font_path)
+    # 2) 3Dモデルのアニメーション（声に合わせて口を動かす）
+    model_dirs = {}
+    if plan.model3d:
+        model_dirs = _render_3d(plan, jobs, workdir, lead)
+
+    # 3) 画面を組み立てる
+    segs, total = [], 0.0
+    for i, (s, audio, seg_dur, dur, words) in enumerate(jobs):
+        layer = _scene_layer(base, s, th, font_path, with_emoji=i not in model_dirs)
         caps = _chunks(s.narration, words, dur)
+        cap_y = 1470 if model_dirs else 1390
         frames = []
+        use3d = i in model_dirs
+        if use3d:  # 背景は1枚、字幕は透明な別レイヤー（猫の上に重ねる）
+            bgp = workdir / f"bg_{i:02d}.png"
+            layer.convert("RGB").save(bgp)
         for k, (t0, text) in enumerate(caps):
-            img = layer.copy()
-            _draw_rich(img, _runs(text, "「", "」"), font_path, 1390, W - 80, 118, th["hi"], 0.12,
+            img = Image.new("RGBA", (W, H), (0, 0, 0, 0)) if use3d else layer.copy()
+            _draw_rich(img, _runs(text, "「", "」"), font_path, cap_y, W - 80, 118, th["hi"], 0.12,
                        min_size=76, max_lines=2)
             p = workdir / f"scene_{i:02d}_{k:02d}.png"
-            img.convert("RGB").save(p)
+            (img if use3d else img.convert("RGB")).save(p)
             start = 0.0 if k == 0 else lead + t0
             end = lead + caps[k + 1][0] if k + 1 < len(caps) else seg_dur
             frames.append((p, max(0.1, end - start)))
@@ -268,17 +329,28 @@ def build(plan: VideoPlan, cfg: dict, workdir: Path, out: Path, allow_silent: bo
                        + f"file '{frames[-1][0].resolve()}'\n", encoding="utf-8")
         seg = workdir / f"seg_{i:02d}.mp4"
         n = max(1, int(seg_dur * FPS))
-        # 最初の0.2秒で少し寄って「ドン」と出し、そのあとゆっくりズーム
-        z = f"if(lt(on,6),1.06-0.01*on,1+0.04*on/{n})"
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
-                        "-i", str(audio), "-filter_complex",
-                        f"[0:v]fps={FPS},scale={W * 2}:{H * 2},zoompan=z='{z}':x='iw/2-(iw/zoom/2)':"
-                        f"y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={FPS},format=yuv420p[v]",
-                        "-map", "[v]", "-map", "1:a", "-t", f"{seg_dur:.3f}", "-c:v", "libx264", "-preset", "veryfast",
-                        "-crf", "18", "-c:a", "aac", "-b:a", "192k", str(seg)], check=True)
+        enc = ["-map", "[v]", "-map", "1:a", "-t", f"{seg_dur:.3f}", "-c:v", "libx264", "-preset", "veryfast",
+               "-crf", "18", "-c:a", "aac", "-b:a", "192k", str(seg)]
+        if i in model_dirs:
+            # 背景（タイトル・字幕）の上に3Dの猫を重ねる。カメラの動きは3D側でつける
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
+                            "-i", str(audio), "-framerate", str(FPS), "-i", str(model_dirs[i] / "f_%05d.png"),
+                            "-loop", "1", "-framerate", str(FPS), "-i", str(bgp),
+                            "-filter_complex",
+                            f"[3:v]format=rgba[bg];[2:v]scale={MODEL_PX}:{MODEL_PX}[m];"
+                            f"[bg][m]overlay=x=(W-w)/2:y={MODEL_Y}:eof_action=repeat[bm];"
+                            f"[0:v]fps={FPS},format=rgba[cap];[bm][cap]overlay=0:0:eof_action=repeat,format=yuv420p[v]",
+                            *enc], check=True)
+        else:
+            # 最初の0.2秒で少し寄って「ドン」と出し、そのあとゆっくりズーム
+            z = f"if(lt(on,6),1.06-0.01*on,1+0.04*on/{n})"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
+                            "-i", str(audio), "-filter_complex",
+                            f"[0:v]fps={FPS},scale={W * 2}:{H * 2},zoompan=z='{z}':x='iw/2-(iw/zoom/2)':"
+                            f"y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={FPS},format=yuv420p[v]", *enc], check=True)
         segs.append(seg)
         total += seg_dur
-        print(f"[time]   {seg_dur:5.1f}秒  [{s.label}] 字幕{len(caps)}枚")
+        print(f"[time]   {seg_dur:5.1f}秒  [{s.label}] 字幕{len(caps)}枚" + (f"  3D:{s.anim}" if i in model_dirs else ""))
     print(f"[time] 合計 {total:.1f}秒")
 
     bgm = Path(plan.bgm) if plan.bgm and Path(plan.bgm).exists() else None
