@@ -112,7 +112,7 @@ SECTIONS = [("intro", 4), ("verse", 8), ("build", 4), ("chorus", 8), ("drop", 8)
 
 
 def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "SNOWLIGHT",
-                   key: int = -2, length: str = "long", voice: str = "en-US-AriaNeural") -> Path:
+                   key: int = -2, length: str = "long", voice: str = "en-US-JennyNeural") -> Path:
     bpm = bpm or 90
     rng = np.random.default_rng(seed)
     beat = 60 / bpm
@@ -264,12 +264,13 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
         for t, seg in render_lyrics(lines, beat, voice=voice, transpose=key):
             put("vox", seg, st + t, g, send=0.35, dly=0.25 if kind != "verse" else 0.15)
         if kind != "verse":  # サビは別の歌い手の声を左右に重ねて、自然なコーラスに
-            for v2, pan, sd in (("en-US-JennyNeural", -0.55, 11), ("en-GB-SoniaNeural", 0.55, 23)):
+            others = [v for v in ("en-US-AriaNeural", "en-GB-SoniaNeural", "en-US-JennyNeural") if v != voice][:2]
+            for v2, pan, sd in ((others[0], -0.55, 11), (others[1], 0.55, 23)):
                 for t, seg in render_lyrics(lines, beat, voice=v2, transpose=key, vib_depth=0.12, seed=sd):
                     put("vox", seg, st + t, g * 0.38, pan=pan, send=0.35)
         if kind == "chorus2":  # 2回目のサビは3度下でハモる
             harm = [(w, [(p, ln, _third_below(m)) for p, ln, m in ns]) for w, ns in lines]
-            for t, seg in render_lyrics(harm, beat, voice="en-US-JennyNeural", transpose=key, vib_depth=0.1, seed=41):
+            for t, seg in render_lyrics(harm, beat, voice=others[0], transpose=key, vib_depth=0.1, seed=41):
                 put("vox", seg, st + t, 0.7, pan=0.3, send=0.4)
     # アウトロ：最後のフレーズをもう一度、遠くに
     out_t = [x["start"] for x in timeline if x["name"] == "outro"][0]

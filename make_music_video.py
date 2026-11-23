@@ -42,7 +42,7 @@ def main() -> int:
     ap.add_argument("--length", choices=["short", "long"],
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
-    ap.add_argument("--voice", default="en-US-AriaNeural", help="ボーカルの声（edge-tts の声の名前。walker スタイルで使う）")
+    ap.add_argument("--voice", default="en-US-JennyNeural", help="ボーカルの声（edge-tts の声の名前。walker スタイルで使う）")
     ap.add_argument("--scene", choices=["auto", "neon", "city", "aurora", "space"], default="auto",
                     help="動く絵 auto=毎回ちがう背景（既定） / neon=夕日とグリッドと車 / city=夜空と海辺の街 / "
                          "aurora=オーロラの雪山と湖 / space=宇宙と惑星")
