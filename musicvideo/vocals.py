@@ -331,8 +331,32 @@ def sing_phrase(phrase, beat, voice, transpose=0, vib_depth=0.17, seed=0):
     f0n = np.where(V, 440.0 * 2 ** ((semis - 69) / 12), 0.0)
     y = pw.synthesize(f0n, np.ascontiguousarray(SP), np.ascontiguousarray(AP), SR, frame_period=FP)
     y = deess(y)
-    y /= np.percentile(np.abs(y), 99.7) + 1e-9
-    y *= 0.7
+    # ボーカルの音量を一定に保つ（ミキサーの人が手でフェーダーを動かすように、小さくなった所を持ち上げる）
+    hop = int(SR * 0.01)
+    nb_ = len(y) // hop
+    env = np.sqrt(np.mean(y[:nb_ * hop].reshape(nb_, hop) ** 2, axis=1)) + 1e-7
+    env = np.convolve(env, np.ones(3) / 3, mode="same")
+    sing = np.zeros(nb_, bool)
+    for _, notes in words:
+        for p, ln, m in notes:
+            a_ = int((p - t_start) / 0.01)
+            b_ = int((p + ln - t_start) / 0.01)
+            sing[max(0, a_):min(nb_, b_)] = True
+    last_note_end = int((words[-1][1][-1][0] + words[-1][1][-1][1] - t_start) / 0.01)
+    sing[max(0, last_note_end - 12):] = False  # 最後の自然な消え方はそのまま
+    if sing.any():
+        tgt = np.median(env[sing])
+        g = np.where(sing, np.clip(tgt / env, 0.6, 4.0), 1.0)
+        g = np.convolve(np.pad(g, 3, mode="edge"), np.hanning(7) / np.hanning(7).sum(), mode="valid")
+        gs = np.interp(np.arange(len(y)), np.arange(nb_) * hop + hop / 2, g)
+        y = y * gs
+        # フレーズの大きさは「歌っている所の平均」でそろえる（一瞬の大きな音に引っぱられない）
+        env2 = np.sqrt(np.mean(y[:nb_ * hop].reshape(nb_, hop) ** 2, axis=1))
+        y *= 0.16 / (np.median(env2[sing]) + 1e-9)
+    else:
+        y /= np.percentile(np.abs(y), 99.7) + 1e-9
+        y *= 0.7
+    y = np.tanh(y * 1.2) / 1.2  # まれな大きな音だけ丸める
     # 息つぎ
     br = breath(rng, 0.28)
     bi = max(0, fr(words[0][1][0][0]) * int(SR * FP / 1000) - int(0.45 * SR))
