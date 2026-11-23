@@ -235,14 +235,51 @@ def sing_phrase(phrase, beat, voice, transpose=0, vib_depth=0.17, seed=0):
             end_note = fr(nxt) - nxt_pre if fr(nxt) - nxt_pre - end_note < 30 else end_note
         mid_end = max(start + 6, end_note - post)
         n_mid = mid_end - start
-        idx = np.concatenate([np.arange(v0 - pre, v0), np.linspace(v0, v1, n_mid), np.arange(v1 + 1, v1 + 1 + post)])
+        # 子音の前後にある無音（「k」「t」を閉じている間など）は短くする：歌手は次の音へすぐつなぐ
+        ew = np.sum(sp, axis=1)
+        thr_e = np.median(ew[v0:v1 + 1]) * 0.004
+        pre_idx = np.array([j for j in range(v0 - pre, v0) if ew[j] > thr_e or j >= v0 - 3], dtype=float)
+        post_idx = np.array([j for j in range(v1 + 1, v1 + 1 + post) if ew[j] > thr_e], dtype=float)[:int(70 / FP)]
+        pre, post = len(pre_idx), len(post_idx)
+        mid_end = max(start + 6, end_note - post)
+        n_mid = mid_end - start
+        # 伸ばすのは母音だけ。語の途中の子音（to-night の n など）は元の長さのまま
+        seg_e = ew[v0:v1 + 1]
+        vowel = seg_e > np.median(seg_e) * 0.3
+        dur = np.where(vowel, 1.0, 0.0)
+        cons_frames = (~vowel).sum()
+        extra = max(0.0, n_mid - cons_frames)
+        dur = np.where(vowel, extra / max(1, vowel.sum()), 1.0)
+        if extra <= 0:
+            dur = np.full(len(seg_e), n_mid / len(seg_e))
+        cum = np.concatenate([[0], np.cumsum(dur)])
+        mid_idx = np.interp(np.arange(n_mid) + 0.5, cum, np.arange(len(cum)) + v0 - 0.5).clip(v0, v1)
+        idx = np.concatenate([pre_idx, mid_idx, post_idx])
         i0 = np.floor(idx).astype(int).clip(0, n - 1)
         i1 = np.minimum(i0 + 1, n - 1)
         wgt = (idx - i0)[:, None]
         sp2 = sp[i0] * (1 - wgt) + sp[i1] * wgt
         ap2 = ap[i0] * (1 - wgt) + ap[i1] * wgt
         sp2 *= np.exp(target_pow - a["power"])
-        vflag = f0[np.rint(idx).astype(int).clip(0, n - 1)] > 0
+        # 母音の途中で一瞬だけ「無声」と判定された所（分析の誤り）は、声があることにする
+        vsrc = f0 > 0
+        run = 0
+        for j in range(v0, v1 + 1):
+            if not vsrc[j]:
+                run += 1
+            else:
+                if 0 < run <= 8:
+                    vsrc[j - run:j] = True
+                run = 0
+        vflag = vsrc[np.rint(idx).astype(int).clip(0, n - 1)]
+        # 声が出ているところの大きさをそろえる（歌手は母音も「r」「l」も同じくらいの大きさで伸ばす）
+        e = np.sum(sp2, axis=1) + 1e-12
+        if vflag.sum() > 4:
+            tgt = np.median(e[vflag])
+            g = np.where(vflag, np.clip(tgt / e, 0.25, 12.0) ** 0.85, 1.0)
+            ker = np.hanning(9)
+            g = np.convolve(np.pad(g, 4, mode="edge"), ker / ker.sum(), mode="valid")
+            sp2 *= g[:, None]
         s0 = start - pre
         s1 = min(nfr, s0 + len(idx))
         L = s1 - s0
@@ -254,19 +291,11 @@ def sing_phrase(phrase, beat, voice, transpose=0, vib_depth=0.17, seed=0):
         SP[s0:s1] = np.where(blend, old * (1 - xf[:, None]) + sp2[:L] * xf[:, None], sp2[:L])
         AP[s0:s1] = ap2[:L]
         V[s0:s1] |= vflag[:L]
-        # 長い音は少しふくらませてから、やさしく抜く
-        for p, ln, m in notes:
-            if ln > 0.6:
-                a_, b_ = fr(p), min(nfr, fr(p + ln))
-                x = np.linspace(0, 1, max(1, b_ - a_))
-                GAIN[a_:b_] *= 0.82 + 0.25 * np.sin(np.pi * np.minimum(x / 0.55, 1) / 2) - 0.2 * np.clip((x - 0.7) / 0.3, 0, 1)
         if wi + 1 == len(words) or fr(words[wi + 1][1][0][0]) - s1 > 8:
             tail = min(L, 18)
             GAIN[s1 - tail:s1] *= np.linspace(1, 0.05, tail) ** 1.5
 
     # 声色の細かな揺れ（固まった機械っぽい母音を防ぐ）と、全体の強弱
-    shimmer = np.convolve(rng.standard_normal(nfr), np.hanning(25) / np.hanning(25).sum(), mode="same")
-    GAIN *= np.exp(shimmer * 0.06)
     SP *= (GAIN ** 2)[:, None]
     # ふんわり息っぽい声：高い周波数ほど息の成分を増やす
     fbin = np.linspace(0, SR / 2, nb)
@@ -302,9 +331,6 @@ def sing_phrase(phrase, beat, voice, transpose=0, vib_depth=0.17, seed=0):
     f0n = np.where(V, 440.0 * 2 ** ((semis - 69) / 12), 0.0)
     y = pw.synthesize(f0n, np.ascontiguousarray(SP), np.ascontiguousarray(AP), SR, frame_period=FP)
     y = deess(y)
-    env = np.sqrt(np.convolve(y ** 2, np.ones(441) / 441, mode="same")) + 1e-6
-    target = np.convolve(env, np.ones(2205) / 2205, mode="same")
-    y = y * np.clip(target / env, 0.6, 1.4) ** 0.5
     y /= np.percentile(np.abs(y), 99.7) + 1e-9
     y *= 0.7
     # 息つぎ

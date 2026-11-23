@@ -112,7 +112,8 @@ SECTIONS = [("intro", 4), ("verse", 8), ("build", 4), ("chorus", 8), ("drop", 8)
 
 
 def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, title: str = "SNOWLIGHT",
-                   key: int = -2, length: str = "long", voice: str = "en-US-JennyNeural") -> Path:
+                   key: int = -2, length: str = "long", voice: str = "en-US-JennyNeural",
+                   stems: Path | None = None) -> Path:
     bpm = bpm or 90
     rng = np.random.default_rng(seed)
     beat = 60 / bpm
@@ -175,8 +176,9 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
             if name in ("intro", "verse", "verse2", "outro", "build", "build2"):
                 # ペダルを踏んだまま弾くイメージ：音は小節の終わりまで響かせ、強弱はフレーズに合わせて山なりに
                 swell = 0.55 + 0.25 * np.sin(np.pi * ((b % 4) + 0.5) / 4)
-                put("keys", piano(root - 12, bar + 0.3, 0.6), t0, 0.2, send=0.45)
-                put("keys", piano(root - 24, bar + 0.3, 0.45), t0 + 0.012, 0.12, send=0.3)
+                kg = 1.5 if name in ("verse", "verse2") else 1.0  # 歌の合間でも音が痩せないように
+                put("keys", piano(root - 12, bar + 0.3, 0.6), t0, 0.3 * kg, send=0.45)
+                put("keys", piano(root - 24, bar + 0.3, 0.45), t0 + 0.012, 0.18 * kg, send=0.3)
                 arp = [tones[0] + 12, tones[1] + 12, tones[2] + 12, tones[0] + 24]
                 pat = [0, 1, 2, 3, 2, 1, 2, 1]
                 for k in range(8):
@@ -185,14 +187,14 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
                     vel = float(np.clip(swell * (1.0 if k % 2 == 0 else 0.82) * rng.uniform(0.92, 1.05)
                                         + (0.08 if k == 0 else 0), 0.3, 0.95))
                     hold = bar - k * beat / 2 + 0.25  # 小節の終わりまで（ペダル）
-                    put("keys", piano(m, hold, vel), at, 0.16, pan=(m - 66) / 30, send=0.5)
+                    put("keys", piano(m, hold, vel), at, 0.24 * kg, pan=(m - 66) / 30, send=0.5)
 
             # パッド
             if name not in ("intro",) or b >= 2:
                 bright = {"chorus": 2200, "chorus2": 2600, "drop": 3000, "drop2": 3400}.get(name, 1100)
                 s = future_chord([tones[0] + 12, tones[1] + 12, tones[2] + 12, tones[0] + 24], bar * 1.05, rng,
                                  bend=False, bright=bright)
-                g = {"drop": 0.2, "drop2": 0.22, "chorus": 0.12, "chorus2": 0.13}.get(name, 0.1)
+                g = {"drop": 0.2, "drop2": 0.22, "chorus": 0.12, "chorus2": 0.13, "verse": 0.24, "verse2": 0.24}.get(name, 0.16)
                 put("pad", s, t0, g, send=0.4)
 
             # ドラムとベース
@@ -222,8 +224,8 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
                     if full:
                         put("fx", impact(rng), t0, 0.7)
             elif name in ("verse", "verse2") and b >= 4:
-                put("drums", K, t0, 0.45)
-                put("drums", K, t0 + 2.5 * beat, 0.35)
+                put("drums", K, t0, 0.16)
+                put("drums", K, t0 + 2.5 * beat, 0.12)
                 for k in range(8):
                     put("drums", SH[k % 3], t0 + k * beat / 2 + rng.normal(0, 0.003), 0.5 * rng.uniform(0.8, 1.1), pan=-0.3)
 
@@ -232,9 +234,9 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
                 steps = [4, 8, 16, 16][b]
                 for k in range(steps):
                     p = (b + k / steps) / nb
-                    put("drums", SN, t0 + k * bar / steps, 0.12 + 0.5 * p, send=0.3)
+                    put("drums", SN, t0 + k * bar / steps, 0.06 + 0.26 * p, send=0.3)
                 for qd in range(4):
-                    put("drums", K, t0 + qd * beat, 0.3 + 0.4 * p_sec)
+                    put("drums", K, t0 + qd * beat, 0.12 + 0.25 * p_sec)
                 if b == nb - 2:
                     put("fx", riser(rng, bar * 2), t0, 0.8)
                 if b == nb - 1:
@@ -260,7 +262,7 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     # ボーカル
     print("  ボーカルを合成中…")
     for st, lines, kind in vocal_parts:
-        g = 1.3 if kind == "verse" else 1.8
+        g = 1.1 if kind == "verse" else 1.8
         for t, seg in render_lyrics(lines, beat, voice=voice, transpose=key):
             put("vox", seg, st + t, g, send=0.35, dly=0.25 if kind != "verse" else 0.15)
         if kind != "verse":  # サビは別の歌い手の声を左右に重ねて、自然なコーラスに
@@ -278,15 +280,9 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     for t, seg in render_lyrics(last, beat, voice=voice, transpose=key, seed=77):
         put("vox", lowpass(seg, 3500), out_t + t, 0.7, send=0.8, dly=0.4)
 
-    # ドロップ前の一瞬の無音
-    for x in timeline:
-        if x["name"] in ("drop", "drop2", "chorus", "chorus2"):
-            i0, i1 = int((x["start"] - beat / 2) * SR), int(x["start"] * SR)
-            for k in ("drums", "bass", "keys", "pad", "lead"):
-                bus[k][i0:i1] *= np.linspace(1, 0, i1 - i0)[:, None] ** 3
 
     # ポンピング
-    for k, d in (("pad", 1.0), ("bass", 1.0), ("lead", 0.35), ("keys", 0.4), ("vox", 0.12)):
+    for k, d in (("pad", 0.6), ("bass", 0.8), ("lead", 0.2)):
         bus[k] *= (1 - d + d * pump)[:, None]
 
     # ボーカルの音作り：低音を切って、少しだけ歪ませて前に出す
@@ -295,8 +291,8 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     # ボーカル用のなめらかなコンプレッサー（大きいところだけ少し抑えて、声の大きさをそろえる）
     lvl = np.sqrt(np.convolve((bus["vox"] ** 2).mean(axis=1), np.ones(882) / 882, mode="same")) + 1e-7
     thr = np.percentile(lvl[lvl > 1e-4], 70) if np.any(lvl > 1e-4) else 1.0
-    gain = np.where(lvl > thr, (lvl / thr) ** -0.45, 1.0)
-    gain = np.convolve(gain, np.ones(2205) / 2205, mode="same")
+    gain = np.where(lvl > thr, (lvl / thr) ** -0.3, 1.0)
+    gain = np.convolve(gain, np.ones(13230) / 13230, mode="same")  # 0.3秒でゆっくり
     bus["vox"] *= gain[:, None]
 
     # ディレイ（付点8分、左右交互）
@@ -319,6 +315,9 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
         wet[:, ch] = np.fft.irfft(np.fft.rfft(bus["verb"][:, ch] + dl[:, ch] * 0.5, nfft) * np.fft.rfft(ir, nfft), nfft)[:N]
 
     mix = sum(bus[k] for k in ("drums", "bass", "keys", "pad", "lead", "vox", "fx")) + dl * 0.35 + wet * 0.4
+    if stems:  # パートごとの音（確認・ミックス用）
+        np.savez_compressed(stems, **{k: bus[k].astype(np.float32) for k in ("drums", "bass", "keys", "pad", "lead", "vox", "fx")},
+                            delay=(dl * 0.35).astype(np.float32), reverb=(wet * 0.4).astype(np.float32))
     mix = _master(mix)
 
     out_path = Path(out_path)

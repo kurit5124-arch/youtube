@@ -562,25 +562,14 @@ def compose_future(out_path: Path, seed: int = 7, bpm: float | None = None, titl
 
 
 def _master(x: np.ndarray) -> np.ndarray:
-    """音を潰さずに音量をそろえる（ゆるいコンプ＋先読みリミッター）"""
-    x = x / (np.percentile(np.abs(x), 99.5) + 1e-9) * 0.5
-    blk = 128
-    nb = len(x) // blk + 1
-    pad = np.zeros((nb * blk, 2))
-    pad[: len(x)] = x
-    peak = np.abs(pad).max(axis=1).reshape(nb, blk).max(axis=1)
-    peak = np.maximum(peak, np.roll(peak, -1))  # 少し先読み
-    ceil = 0.95
-    target = np.minimum(1.0, ceil / (peak + 1e-9))
-    g = np.ones(nb)
-    v = 1.0
-    rel = 1 - np.exp(-blk / (SR * 0.12))
-    for i in range(nb):
-        v = target[i] if target[i] < v else v + (target[i] - v) * rel
-        g[i] = v
-    gain = np.interp(np.arange(len(x)), np.arange(nb) * blk + blk / 2, g)
-    y = x * gain[:, None]
-    y = np.tanh(y * 1.05) / np.tanh(1.05)
+    """音量をそろえる。全体の音量を上下させる処理（ポンピング＝ところどころ小さくなる）はしない。
+    ピークだけを瞬間的にやわらかく丸める"""
+    x = x / (np.percentile(np.abs(x), 99.9) + 1e-9) * 0.85
+    knee = 0.75
+    a = np.abs(x)
+    over = a > knee
+    y = x.copy()
+    y[over] = np.sign(x[over]) * (knee + (1 - knee) * np.tanh((a[over] - knee) / (1 - knee)))
     fade = int(0.03 * SR)
     y[:fade] *= np.linspace(0, 1, fade)[:, None]
     return y * 0.97
