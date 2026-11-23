@@ -1,0 +1,129 @@
+# もしもシリーズ 第1話「もしも、人間が眠らなかったら」
+# say: 読む文（1行＝1つの音声）。shot: その行から始まる場面（書かなければ前の場面が続く）
+# hud: 左上のメーター。fx: 効果（glitch=画面が乱れる / blackout=一瞬まっ暗）
+# 自分の声を使うとき: voice/ep01_nemuranai/01.mp3, 02.mp3 … を置く（番号＝この beats の順番）
+
+episode: 1
+title: もしも、人間が眠らなかったら
+hud_label: 起きてから
+voice: {name: ja-JP-KeitaNeural, rate: "+8%", pitch: "-2Hz"}
+theme: {top: [10, 14, 40], bottom: [42, 24, 82], accent: [255, 196, 61]}
+
+beats:
+  # ---------------- オープニング
+  - say: もしも、あなたが今日から、一睡もしなかったら。
+    shot: {type: mascot, face: normal, text: "もしも、眠らなかったら"}
+    hud: 0時間
+  - say: 1日目は、まだ平気です。
+    shot: {type: mascot, face: happy, icons: ["☕", "😎"]}
+  - say: でも3日目、あなたは、そこにいないはずのものを見はじめます。
+    shot: {type: mascot, face: dizzy, icons: ["👻", "👁️", "🌀"]}
+    fx: [{type: glitch, strength: 0.8}]
+  - say: 今日は、人間が眠らないと体に何が起きるのかを、1日ずつ見ていきます。
+    shot: {type: clock, speed: 3, text: "1日ずつ見ていく"}
+  - say: これは、ただの想像ではありません。世界には本当に、11日間眠らなかった人がいます。
+    shot: {type: big, text: "11日間", sub: "眠らなかった人が、本当にいる", emoji: "🕵️"}
+  - say: その人がどうなったのかは、最後に話します。
+    shot: {type: title, text: "もしもシリーズ 第1話", sub: "もしも、人間が眠らなかったら", emoji: "🌙"}
+
+  # ---------------- 1日目
+  - say: まずは1日目。
+    shot: {type: chapter, text: "1日目", sub: "起きてから 17時間", emoji: "🌙"}
+    hud: 17時間
+  - say: 朝7時に起きたとします。夜の12時で、起きてから17時間です。
+    shot: {type: clock, speed: 1.2, text: "朝7時 → 夜12時"}
+  - say: ある研究では、起きてから17〜19時間たつと、集中力や反応の速さが、お酒を飲んだときと同じくらいまで下がるとされています。
+    shot:
+      type: equal
+      left: {emoji: "⏰", text: "17〜19時間\n起きている"}
+      right: {emoji: "🍺", text: "お酒を\n飲んだ状態"}
+      text: "集中力・反応の速さ"
+  - say: つまり、徹夜で運転するのは、飲酒運転とあまり変わらないということです。
+    shot: {type: icons, items: [{emoji: "🚗", text: "徹夜で運転"}, {emoji: "🍺", text: "飲酒運転"}], text: "ほとんど同じ"}
+  - say: それから、夜中にお腹がすいてきます。
+    shot: {type: mascot, face: hungry, bubble: "🍜"}
+  - say: 眠りが足りないと、食欲を強くするホルモンが増えて、満腹を感じさせるホルモンが減ることがわかっています。
+    shot: {type: icons, items: [{emoji: "⬆️", text: "食べたくなる\nホルモン"}, {emoji: "⬇️", text: "満腹の\nホルモン"}]}
+  - say: 夜ふかしすると、甘いものやラーメンが食べたくなるのは、気のせいではありません。
+    shot: {type: icons, items: [{emoji: "🍩"}, {emoji: "🍜"}, {emoji: "🍫"}], text: "気のせいじゃない", stagger: 0.35}
+  - say: でも、本当にこわいのは、ここからです。
+    shot: {type: mascot, face: tired, text: "本当にこわいのは、ここから"}
+
+  # ---------------- 2日目
+  - say: 2日目。
+    shot: {type: chapter, text: "2日目", sub: "起きてから 30時間", emoji: "😵"}
+    hud: 30時間
+  - say: ここから、自分では気づかない、こわいことが起きはじめます。それが、マイクロスリープ。
+    shot: {type: big, text: "マイクロスリープ", size: 150, sub: "数秒だけの居眠り", emoji: "💤"}
+  - say: 目は開いているのに、脳が数秒だけ、眠ってしまう現象です。
+    shot: {type: mascot, face: tired, icons: ["🧠", "💤"]}
+    fx: [{type: blackout, at: 1.6, dur: 1.2}]
+  - say: 本人は寝ていないと思っていても、その数秒、何も見えていないし、何も聞こえていません。
+    shot: {type: icons, items: [{emoji: "🙈", text: "見えない"}, {emoji: "🙉", text: "聞こえない"}], text: "その数秒は…"}
+  - say: さらに、気持ちも不安定になります。寝不足の脳は、イヤなことに強く反応しやすくなるんです。
+    shot: {type: mascot, face: exhausted, icons: ["💢", "😰"]}
+  - say: 寝不足の日にイライラするのは、性格のせいではなく、脳の状態のせいかもしれません。
+    shot: {type: title, text: "性格のせいじゃない", sub: "脳の状態のせいかも", emoji: "🧠", size: 110}
+
+  # ---------------- 3日目
+  - say: 3日目。
+    shot: {type: chapter, text: "3日目", sub: "起きてから 60時間", emoji: "👻"}
+    hud: 60時間
+    fx: [{type: glitch, strength: 0.5}]
+  - say: ここで、最初に言ったことが起きます。幻覚です。
+    shot: {type: big, text: "幻覚", size: 240, sub: "見えないはずのものが見える", emoji: "👁️"}
+    fx: [{type: glitch, strength: 1.0}]
+  - say: 道にある看板が人に見えたり、物の形がゆがんで見えたり。
+    shot: {type: equal, sign: "→", left: {emoji: "🪧", text: "道の看板"}, right: {emoji: "🧍", text: "人に見える"}}
+    fx: [{type: glitch, strength: 0.6}]
+  - say: 話していても言葉が出てこない。さっき言ったことを、もう覚えていない。
+    shot: {type: mascot, face: dizzy, icons: ["❓", "💭", "❓"]}
+  - say: この頃には、頭の中がずっと、霧に包まれているような状態です。
+    shot: {type: icons, items: [{emoji: "🌫️"}, {emoji: "🧠"}, {emoji: "🌫️"}], text: "頭の中に霧", stagger: 0.3}
+
+  # ---------------- 1週間
+  - say: では、なぜ眠らないと、こんなことになるのでしょうか。
+    shot: {type: chapter, text: "なぜ？", sub: "眠りの本当の役わり", emoji: "🔍"}
+  - say: 実は、脳は寝ているあいだに、ゴミ出しをしています。
+    shot: {type: brain, mode: clean, text: "寝ているあいだに「ゴミ出し」"}
+  - say: 起きているあいだにたまった、脳の中の老廃物。これを、眠っているあいだに洗い流す仕組みがあることが、研究でわかってきました。
+  - say: 眠らないということは、ゴミ出しをせずに、ゴミをためつづけるということです。
+    shot: {type: brain, mode: dirty, text: "眠らないと…ゴミがたまる"}
+  - say: ネズミの実験では、まったく眠らせないようにすると、2〜3週間ほどで死んでしまった、という結果もあります。
+    shot: {type: big, text: "2〜3週間", sub: "まったく眠れなかったネズミ", emoji: "🐭", size: 170}
+  - say: 眠りは、ただの休憩ではありません。体と脳の、メンテナンスの時間なんです。
+    shot: {type: title, text: "眠り＝メンテナンス", sub: "ただの休憩じゃない", emoji: "🔧", size: 120}
+
+  # ---------------- 実話
+  - say: それでは、最初に話した人の話です。
+    shot: {type: chapter, text: "実話", sub: "11日間、眠らなかった人", emoji: "📰"}
+  - say: 1964年、アメリカ。17歳の高校生が、学校の自由研究として、人間はどれだけ眠らずにいられるかに挑戦しました。
+    shot: {type: newspaper, year: "1964年", headline: "17歳の高校生\n眠らない記録に挑戦"}
+  - say: 記録は、264時間。およそ、11日間です。
+    shot: {type: big, text: "264時間", count: true, count_secs: 2.2, sub: "およそ11日間", emoji: "⏱️"}
+    hud: 264時間
+  - say: 途中、彼にも、今日話したことが次々に起きました。イライラ、物忘れ、言葉が出てこない。そして、幻覚。
+    shot: {type: icons, items: [{emoji: "💢", text: "イライラ"}, {emoji: "❓", text: "物忘れ"}, {emoji: "💬", text: "言葉が出ない"}, {emoji: "👻", text: "幻覚"}], stagger: 0.9}
+  - say: 挑戦が終わったあと、彼は14時間ほど眠り、その後、体は回復したと伝えられています。
+    shot: {type: mascot, face: sleep, text: "14時間ほど眠って回復"}
+  - say: ただ、この挑戦はあまりに危険なため、ギネス世界記録は、眠らない記録の受け付けをやめています。
+    shot: {type: warning, text: "危険なので、ぜったいにマネしないでください"}
+
+  # ---------------- 今のわたしたち
+  - say: ここまで聞いて、11日も起きていることなんてないし、関係ないと思った人。
+    shot: {type: chapter, text: "わたしたちは？", sub: "", emoji: "🙋"}
+    hud: ""
+  - say: 実は、OECDの調査では、日本人の平均睡眠時間は、加盟国の中で一番短い、という結果が出ています。
+    shot: {type: big, text: "日本人の睡眠", size: 140, sub: "OECD加盟国の中で、いちばん短い", emoji: "🗾"}
+  - say: 11日の徹夜はしなくても、少しずつの寝不足を、毎日積み重ねているのかもしれません。
+    shot: {type: mascot, face: tired, icons: ["📱", "🌙", "📱"]}
+  - say: ぐっすり眠るためにできることは、意外とシンプルです。毎朝、同じ時間に起きる。朝、日の光を浴びる。寝る前は、明るい画面を見すぎない。
+    shot: {type: list, title: "ぐっすり眠るために", items: ["毎朝、同じ時間に起きる", "朝、日の光を浴びる", "寝る前は、明るい画面を見すぎない"], stagger: 2.2}
+
+  # ---------------- エンディング
+  - say: あなたがこれまでで一番長く起きていたのは、何時間ですか？よかったら、コメントで教えてください。
+    shot: {type: mascot, face: happy, text: "あなたの最長記録は？", icons: ["💬"]}
+  - say: 次回のもしもは、もしも、時計のない洞窟で2か月暮らしたら。本当にやった人がいます。
+    shot: {type: title, text: "次回のもしも", sub: "時計のない洞窟で2か月暮らしたら", emoji: "🕳️", size: 120}
+  - say: チャンネル登録をして、待っていてください。それでは、今日は早めに寝てくださいね。
+    shot: {type: mascot, face: sleep, text: "おやすみなさい"}

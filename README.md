@@ -157,6 +157,22 @@ python scripts/build_affiliate_site.py              # まとめページを site
 python main.py --source poll   # 試しに作る（結果発表は YT_API_KEY と前回の記録があるときだけ）
 ```
 
+## 6. もしもシリーズ（横長・アニメーション付きの解説動画）
+
+「本当にやった人がいる、もしも」を、5分ほどのアニメーション動画にします（台本は `daihon/`）。
+
+```bash
+python make_moshimo.py moshimo/episodes/ep01_nemuranai.yaml               # 全部作る（数分かかる）
+python make_moshimo.py moshimo/episodes/ep01_nemuranai.yaml --preview 0 40  # 0〜40秒だけ確認
+```
+
+- **場面** … `moshimo/episodes/*.yaml` に、読む文（`say`）と場面（`shot`）を1行ずつ書きます。
+  場面の種類：主人公「あなた」（表情つき）、時計、大きな数字（カウントアップ）、比べる（＝）、アイコン、箇条書き、
+  脳のゴミ出し、古い新聞、注意、章の区切り。効果：画面の乱れ（幻覚）、一瞬まっ暗（居眠り）
+- **自分の声** … `voice/ep01_nemuranai/01.mp3`, `02.mp3` …（番号＝`beats` の順番、1行1ファイル）を置くと、その行は録音を使います。
+  置いていない行は音声合成の仮の声です。動画の長さ・アニメの時間は声の長さに自動で合います
+- 字幕・左上のメーター（起きてから○時間）・効果音・BGM は自動で入ります
+
 ## カスタマイズ
 
 - **`config.yaml`** … 声（女性/男性）、話す速さ、最大秒数、紹介する出来事の数、公開設定 など
@@ -179,6 +195,9 @@ main.py                     実行の入口
 config.yaml / topics.yaml   設定とネタ帳
 polls.yaml / poll_state.json  多数決のお題帳と、前回の動画・結果の記録
 shorts/poll.py              多数決（コメント集計・台本作り）
+make_moshimo.py             もしもシリーズの動画を作る入口
+moshimo/                    もしもシリーズのアニメーション（anim.py 絵 / shots.py 場面 / build.py 組み立て / episodes/ 各話）
+daihon/                     もしもシリーズの台本とシリーズの決まりごと
 .github/workflows/daily-poll.yml  多数決の動画作成（手動実行・投稿なし）
 shorts/sources.py           ネタ集め・台本作り
 shorts/wikitext.py          Wikipedia の文章の整形
