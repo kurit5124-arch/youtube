@@ -262,9 +262,10 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     # ボーカル
     print("  ボーカルを合成中…")
     for st, lines, kind in vocal_parts:
-        g = 1.1 if kind == "verse" else 1.8
+        g = 0.8 if kind == "verse" else 1.3
         for t, seg in render_lyrics(lines, beat, voice=voice, transpose=key):
-            put("vox", seg, st + t, g, send=0.35, dly=0.25 if kind != "verse" else 0.15)
+            # 歌の合間はこだま（ディレイ）と残響でうめる
+            put("vox", seg, st + t, g, send=0.5, dly=0.45 if kind != "verse" else 0.35)
         if kind != "verse":  # サビは別の歌い手の声を左右に重ねて、自然なコーラスに
             others = [v for v in ("en-US-AriaNeural", "en-GB-SoniaNeural", "en-US-JennyNeural") if v != voice][:2]
             for v2, pan, sd in ((others[0], -0.55, 11), (others[1], 0.55, 23)):
