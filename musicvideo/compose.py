@@ -342,15 +342,52 @@ def _hook(rng, prog, style="hard") -> list[tuple[float, float, int]]:
     return out
 
 
-def piano(m: float, dur: float) -> np.ndarray:
-    """倍音が順に減衰するピアノ風の音"""
-    n = int(dur * SR)
+_PIANO_CACHE: dict = {}
+
+
+def piano(m: float, dur: float, vel: float = 0.75) -> np.ndarray:
+    """本物らしいピアノの音。
+    - 1つの鍵盤の2本の弦がわずかにずれて「うなり」が出る
+    - 倍音は少しずつ高めにずれ（弦の硬さ）、高い倍音ほど早く消える。最初に早く減って、あとは長く残る
+    - ハンマーの「コツッ」、強く弾くほど明るい音、音を離すと自然に消える"""
+    key = (int(round(m)), round(dur, 2), round(vel, 1))
+    if key in _PIANO_CACHE:
+        return _PIANO_CACHE[key]
+    rel = 0.35
+    n = int((dur + rel) * SR)
     t = np.arange(n) / SR
     f = mtof(m)
+    r = np.random.default_rng(int(m * 100 + vel * 10))
+    B = 0.00008 * (2 ** ((m - 60) / 24))
+    hi = (f / 261.6) ** 0.5
     s = np.zeros(n)
-    for k, a in enumerate((1.0, 0.6, 0.35, 0.25, 0.15, 0.1), start=1):
-        s += a * np.sin(2 * np.pi * k * f * (1 + 0.0004 * k * k) * t) * np.exp(-t * (1.2 + 0.9 * k))
-    return s * adsr(n, 0.003, 0.0, 1.0, 0.08) * 0.5
+    norm = 0.0
+    for k in range(1, 17):
+        fk = k * f * np.sqrt(1 + B * k * k)
+        if fk > 9000:
+            break
+        amp = (1 / k ** 1.15) * np.exp(-(k - 1) * (1.05 - vel) * 0.35)
+        rate = (0.5 + 0.32 * k) * hi
+        env = 0.65 * np.exp(-t * rate * 2.8) + 0.35 * np.exp(-t * rate * 0.45)
+        for det in (-0.7, 0.8):  # 2本の弦（うなり）
+            s += amp * env * np.sin(2 * np.pi * fk * (1 + det / 1731) * t + r.random() * 6.28)
+        norm += amp ** 2
+    s /= np.sqrt(norm) * 2
+    # ハンマーの音
+    hn = int(0.012 * SR)
+    ham = lowpass(highpass(r.standard_normal(hn), 1200), 5000) * np.exp(-np.arange(hn) / SR * 400)
+    s[:hn] += ham * 0.08 * vel
+    # 弾き始めと、離したあと（ダンパー）
+    env = np.ones(n)
+    a = int(0.002 * SR)
+    env[:a] = np.linspace(0, 1, a)
+    off = int(dur * SR)
+    env[off:] = np.exp(-np.arange(n - off) / SR * 14)
+    s = s * env * (0.35 + 0.65 * vel) * 0.55
+    s = lowpass(s, 2500 + 6000 * vel)
+    if len(_PIANO_CACHE) < 4000:
+        _PIANO_CACHE[key] = s
+    return s
 
 
 def hp_sweep(x: np.ndarray, i0: int, i1: int, f0: float, f1: float) -> None:

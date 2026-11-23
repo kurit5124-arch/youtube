@@ -173,12 +173,19 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
 
             # ピアノ
             if name in ("intro", "verse", "verse2", "outro", "build", "build2"):
-                put("keys", piano(root - 12, bar * 1.1), t0, 0.16, send=0.5)
+                # ペダルを踏んだまま弾くイメージ：音は小節の終わりまで響かせ、強弱はフレーズに合わせて山なりに
+                swell = 0.55 + 0.25 * np.sin(np.pi * ((b % 4) + 0.5) / 4)
+                put("keys", piano(root - 12, bar + 0.3, 0.6), t0, 0.2, send=0.45)
+                put("keys", piano(root - 24, bar + 0.3, 0.45), t0 + 0.012, 0.12, send=0.3)
                 arp = [tones[0] + 12, tones[1] + 12, tones[2] + 12, tones[0] + 24]
                 pat = [0, 1, 2, 3, 2, 1, 2, 1]
                 for k in range(8):
-                    put("keys", piano(arp[pat[k]], beat * 0.9), t0 + k * beat / 2,
-                        0.11 * (0.8 + 0.2 * (k % 2 == 0)) * rng.uniform(0.85, 1.05), pan=rng.uniform(-0.3, 0.3), send=0.55)
+                    m = arp[pat[k]]
+                    at = t0 + k * beat / 2 + rng.normal(0, 0.006)  # 人が弾くような少しの揺れ
+                    vel = float(np.clip(swell * (1.0 if k % 2 == 0 else 0.82) * rng.uniform(0.92, 1.05)
+                                        + (0.08 if k == 0 else 0), 0.3, 0.95))
+                    hold = bar - k * beat / 2 + 0.25  # 小節の終わりまで（ペダル）
+                    put("keys", piano(m, hold, vel), at, 0.16, pan=(m - 66) / 30, send=0.5)
 
             # パッド
             if name not in ("intro",) or b >= 2:
@@ -253,20 +260,21 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
     # ボーカル
     print("  ボーカルを合成中…")
     for st, lines, kind in vocal_parts:
+        g = 1.3 if kind == "verse" else 1.8
         for t, seg in render_lyrics(lines, beat, voice=voice, transpose=key):
-            g = 1.3 if kind == "verse" else 2.0
             put("vox", seg, st + t, g, send=0.35, dly=0.25 if kind != "verse" else 0.15)
-            if kind != "verse":  # サビは声を重ねて厚く（少しずらして左右に）
-                put("vox", seg, st + t + 0.018, g * 0.45, pan=0.6, send=0.3)
-                put("vox", seg, st + t + 0.011, g * 0.45, pan=-0.6, send=0.3)
+        if kind != "verse":  # サビは別の歌い手の声を左右に重ねて、自然なコーラスに
+            for v2, pan, sd in (("en-US-JennyNeural", -0.55, 11), ("en-GB-SoniaNeural", 0.55, 23)):
+                for t, seg in render_lyrics(lines, beat, voice=v2, transpose=key, vib_depth=0.12, seed=sd):
+                    put("vox", seg, st + t, g * 0.38, pan=pan, send=0.35)
         if kind == "chorus2":  # 2回目のサビは3度下でハモる
             harm = [(w, [(p, ln, _third_below(m)) for p, ln, m in ns]) for w, ns in lines]
-            for t, seg in render_lyrics(harm, beat, voice=voice, transpose=key):
-                put("vox", seg, st + t + 0.007, 0.8, pan=0.35, send=0.4)
+            for t, seg in render_lyrics(harm, beat, voice="en-US-JennyNeural", transpose=key, vib_depth=0.1, seed=41):
+                put("vox", seg, st + t, 0.7, pan=0.3, send=0.4)
     # アウトロ：最後のフレーズをもう一度、遠くに
     out_t = [x["start"] for x in timeline if x["name"] == "outro"][0]
     last = [(w, [(p - 24, ln, m) for p, ln, m in ns]) for w, ns in CHORUS if ns[0][0] >= 24]
-    for t, seg in render_lyrics(last, beat, voice=voice, transpose=key):
+    for t, seg in render_lyrics(last, beat, voice=voice, transpose=key, seed=77):
         put("vox", lowpass(seg, 3500), out_t + t, 0.7, send=0.8, dly=0.4)
 
     # ドロップ前の一瞬の無音
@@ -282,7 +290,13 @@ def compose_walker(out_path: Path, seed: int = 7, bpm: float | None = None, titl
 
     # ボーカルの音作り：低音を切って、少しだけ歪ませて前に出す
     for ch in range(2):
-        bus["vox"][:, ch] = np.tanh(highpass(bus["vox"][:, ch], 160) * 1.4) / 1.4
+        bus["vox"][:, ch] = lowpass(highpass(bus["vox"][:, ch], 120), 11000)
+    # ボーカル用のなめらかなコンプレッサー（大きいところだけ少し抑えて、声の大きさをそろえる）
+    lvl = np.sqrt(np.convolve((bus["vox"] ** 2).mean(axis=1), np.ones(882) / 882, mode="same")) + 1e-7
+    thr = np.percentile(lvl[lvl > 1e-4], 70) if np.any(lvl > 1e-4) else 1.0
+    gain = np.where(lvl > thr, (lvl / thr) ** -0.45, 1.0)
+    gain = np.convolve(gain, np.ones(2205) / 2205, mode="same")
+    bus["vox"] *= gain[:, None]
 
     # ディレイ（付点8分、左右交互）
     d = int(beat * 0.75 * SR)
