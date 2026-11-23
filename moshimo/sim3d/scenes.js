@@ -116,9 +116,9 @@ function earth(p) {
       spin.rotation.y = (h / 24) * Math.PI * 2;
       clouds.rotation.y = spin.rotation.y * 1.08 + 0.3;
       const a = -0.5 + 0.25 * (t / dur);
-      const dist = (p.dist ?? 5.0) - 0.4 * (t / dur);
+      const dist = (p.dist ?? 5.6) - 0.4 * (t / dur);
       camera.position.set(Math.sin(a) * dist, 0.35, Math.cos(a) * dist);
-      camera.lookAt(0, -0.12, 0);
+      camera.lookAt(0, 0.28, 0);
     },
   };
 }
@@ -169,9 +169,9 @@ function room(p) {
   box(2.1, 0.12, 1.9, std(0x5b7bd5), -2.75, 0.73, 1.35);
   box(0.9, 0.18, 0.5, std(0xffffff), -2.75, 0.78, -0.3);
   // 時計
-  const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.38, 48), std(0xffffff)); clockFace.position.set(-1.3, 3.5, -2.94); scene.add(clockFace);
+  const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.38, 48), std(0xffffff)); clockFace.position.set(-2.9, 3.3, -2.94); scene.add(clockFace);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.39, 0.035, 12, 48), std(0x333344)); ring.position.copy(clockFace.position); scene.add(ring);
-  const hand = (len, w, c) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(w, len, 0.02), new THREE.MeshBasicMaterial({ color: c })); m.position.y = len / 2; g.add(m); g.position.set(-1.3, 3.5, -2.92); scene.add(g); return g; };
+  const hand = (len, w, c) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(w, len, 0.02), new THREE.MeshBasicMaterial({ color: c })); m.position.y = len / 2; g.add(m); g.position.set(-2.9, 3.3, -2.92); scene.add(g); return g; };
   const hourH = hand(0.2, 0.05, 0x222233), minH = hand(0.31, 0.03, 0x222233);
   // 椅子と人
   box(0.7, 0.08, 0.7, std(0x444a5a), -0.6, 0.75, -1.0); box(0.7, 0.8, 0.08, std(0x444a5a), -0.6, 1.15, -0.65);
@@ -233,7 +233,7 @@ function brain(p) {
     vertexShader: NOISE + `varying float vD; varying vec3 vN; varying vec3 vW; varying vec3 vP;
       float gy(vec3 p){ float nz=snoise(p*vec3(4.2,5.2,3.6))+0.35*snoise(p*9.0); return smoothstep(0.0,0.42,abs(nz)); }
       vec3 disp(vec3 p){ vec3 n=normalize(p); float mid=exp(-p.x*p.x*110.0);
-        float d=0.07*gy(p)-0.035-0.2*mid; return (n+n*d)*vec3(1.0,0.82,1.25); }
+        float d=0.07*gy(p)-0.035-0.2*mid; return (n+n*d)*vec3(0.92,0.8,1.12); }
       void main(){ vec3 p=normalize(position); vec3 q=disp(p);
         vec3 t1=normalize(cross(p,abs(p.y)<0.95?vec3(0.0,1.0,0.0):vec3(1.0,0.0,0.0))); vec3 t2=cross(p,t1);
         float e=0.006; vec3 qa=disp(normalize(p+t1*e)); vec3 qb=disp(normalize(p+t2*e));
@@ -268,12 +268,12 @@ function brain(p) {
         let r;
         if (dirty) { r = (ph < k * 1.2) ? 1.08 + 0.05 * sp : 0; }            // 時間とともに表面にたまっていく
         else { r = 0.6 + (((t * (0.25 + 0.35 * sp)) + ph) % 1) * 1.8; }    // 中から外へ流れ出ていく
-        pos.set([x * r, y * r * 0.82, z * r * 1.25], i * 3);
+        pos.set([x * r * 0.92, y * r * 0.8, z * r * 1.12], i * 3);
       }
       g.attributes.position.needsUpdate = true;
       mat.uniforms.dirt.value = dirty ? Math.min(1, k * 1.3) : 0;
       b.rotation.y = 0.4 + t * 0.25; pts.rotation.y = b.rotation.y;
-      camera.position.set(0, 0.9, 4.3 - 0.4 * k); camera.lookAt(0, 0, 0);
+      camera.position.set(0, 1.0, 6.0 - 0.5 * k); camera.lookAt(0, 0.12, 0);
     },
   };
 }
