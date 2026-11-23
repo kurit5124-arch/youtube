@@ -20,7 +20,7 @@ PASTEL = ["#ff8fd8", "#8fe9ff", "#fff08f", "#b48fff", "#8fffc1", "#ffb28f"]
 
 
 class SkyCityScene:
-    def __init__(self, W, H, feats: Features, title="AFTERGLOW", subtitle="", seed=7, hue=0.0):
+    def __init__(self, W, H, feats: Features, title="AFTERGLOW", subtitle="", seed=7, hue=0.0, snow=False):
         self.W, self.H, self.f = W, H, feats
         rng = np.random.default_rng(seed)
         self.rng = rng
@@ -94,6 +94,13 @@ class SkyCityScene:
         self.title_rgb, self.title_a, g = _title_layers(W, H, title, subtitle, ty, width_frac=0.7 if not portrait else 0.86)
         self.title_glow = _blur(g, 26, 4) + _blur(g, 8, 2)
         self.particles = Particles(W, H, rng, count=110, colors=("#ffd1f0", "#c7f3ff", "#fff3b0"))
+        # 雪（手前ほど大きく速い）
+        self.snow = None
+        if snow:
+            n = 420
+            depth = rng.random(n)
+            self.snow = dict(x=rng.random(n) * W, y=rng.random(n) * H, depth=depth,
+                             size=1.2 + depth ** 2 * 4.5, speed=30 + depth * 110, ph=rng.random(n) * 6.28)
         self.post = Post(W, H, rng)
         self.post.set_hue_track(feats, hue)
 
@@ -275,6 +282,16 @@ class SkyCityScene:
 
         # 光の粒
         self.particles.draw(glow, t, prog, e)
+
+        # 雪：ゆっくり降り、盛り上がると少し速く・風で流れる
+        if self.snow is not None:
+            sn = self.snow
+            fall = t * 1.0 + prog * 0.35
+            ys = (sn["y"] + sn["speed"] * fall) % (H + 20) - 10
+            xs = (sn["x"] + 25 * np.sin(t * 0.6 + sn["ph"]) + sn["speed"] * 0.25 * fall) % W
+            for x, y, sz, d in zip(xs, ys, sn["size"], sn["depth"]):
+                a = 0.5 + 0.5 * d
+                cv2.circle(img, (int(x), int(y)), max(1, int(sz)), (a, a, a * 1.05), -1, cv2.LINE_AA)
 
         # 水面：上の景色を逆さまに映して、ゆらゆら
         rh = H - hy

@@ -21,25 +21,27 @@ from pathlib import Path
 from musicvideo.analyze import analyze
 from musicvideo.compose import compose
 from musicvideo.future import compose_future
+from musicvideo.walker import compose_walker
 from musicvideo.render import render_video
 from musicvideo.thumbnail import make_thumbnails
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--style", choices=["future", "hard", "edm", "synthwave"], default="future",
-                    help="曲の雰囲気 future=明るくエモいフューチャーベース（既定） / hard=激しいダークシンセ / edm=フェス系EDM / synthwave=ゆったりめ")
+    ap.add_argument("--style", choices=["walker", "future", "hard", "edm", "synthwave"], default="future",
+                    help="曲の雰囲気 future=明るくエモいフューチャーベース（既定） / walker=切ないメロディックEDM＋女性ボーカル / hard=激しいダークシンセ / edm=フェス系EDM / synthwave=ゆったりめ")
     ap.add_argument("--title", help="画面に出す曲名（既定: hard=OVERDRIVE, edm=SKYLINE, synthwave=NEON DRIVE）")
     ap.add_argument("--subtitle", help="曲名の下の小さい文字")
     ap.add_argument("--seed", type=int, default=7, help="作曲と景色のパターン（数字を変えると別の曲に）")
     ap.add_argument("--ai-song", type=Path, help="学習した AI が作ったメロディとコード（ml/generate.py の出力 json）を使う")
     ap.add_argument("--melody-seed", type=int, help="メロディだけ変える（コード・音色・映像はそのまま）")
     ap.add_argument("--key", type=int, default=None, help="曲の高さを半音いくつ上下するか（例: -3 で F#マイナー）")
-    ap.add_argument("--hue", type=float, default=0.0, help="映像の色味を回す角度（例: -40 で青っぽく、20 で赤っぽく）")
+    ap.add_argument("--hue", type=float, default=None, help="映像の色味を回す角度（例: -40 で青っぽく、20 で赤っぽく）")
     ap.add_argument("--bpm", type=float, help="テンポ（既定: hard=140, synthwave=128）")
     ap.add_argument("--length", choices=["short", "long"],
                     help="曲の長さ short=約1分 / long=約3分（既定: 縦型は short、横型は long）")
     ap.add_argument("--audio", type=Path, help="自分の曲を使う（mp3/wav）。省略すると自動作曲")
+    ap.add_argument("--voice", default="en-US-AriaNeural", help="ボーカルの声（edge-tts の声の名前。walker スタイルで使う）")
     ap.add_argument("--scene", choices=["city", "neon"],
                     help="動く絵の種類 city=夜空と海辺の街・花火 / neon=夕日とグリッドと車（既定: future は city）")
     ap.add_argument("--image", type=Path, help="自分のイラストを動かす。省略するとプログラムで描く")
@@ -49,8 +51,12 @@ def main() -> int:
     ap.add_argument("--workers", type=int, help="並列数（既定: CPU 数）")
     ap.add_argument("--out", type=Path, default=Path("output"), help="出力フォルダ")
     args = ap.parse_args()
-    genre = {"future": "FUTURE BASS", "hard": "DARKSYNTH", "edm": "EDM", "synthwave": "SYNTHWAVE"}[args.style]
-    args.title = args.title or {"future": "AFTERGLOW", "hard": "OVERDRIVE", "edm": "SKYLINE", "synthwave": "NEON DRIVE"}[args.style]
+    genre = {"walker": "MELODIC EDM", "future": "FUTURE BASS", "hard": "DARKSYNTH", "edm": "EDM",
+             "synthwave": "SYNTHWAVE"}[args.style]
+    args.title = args.title or {"walker": "SNOWLIGHT", "future": "AFTERGLOW", "hard": "OVERDRIVE", "edm": "SKYLINE",
+                                "synthwave": "NEON DRIVE"}[args.style]
+    if args.hue is None:
+        args.hue = -40.0 if args.style == "walker" else 0.0
     args.subtitle = args.subtitle or f"{genre}  ·  ORIGINAL TRACK"
 
     W, H = (1920, 1080) if args.landscape else (1080, 1920)
@@ -65,7 +71,10 @@ def main() -> int:
         audio = args.out / f"{slug}{'_landscape' if args.landscape else ''}.mp3"
         length = args.length or ("long" if args.landscape else "short")
         print(f"[1/3] 作曲中…（{args.style}, seed={args.seed}, {length}）")
-        if args.style == "future":
+        if args.style == "walker":
+            compose_walker(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length,
+                           key=-2 if args.key is None else args.key, voice=args.voice)
+        elif args.style == "future":
             compose_future(audio, seed=args.seed, bpm=args.bpm, title=args.title, length=length,
                            key=-4 if args.key is None else args.key)
         else:
@@ -77,8 +86,10 @@ def main() -> int:
     print("[2/3] 音を解析中…")
     feats = analyze(audio, fps=args.fps)
 
-    kind = "image" if args.image else (args.scene or ("city" if args.style == "future" else "neon"))
+    kind = "image" if args.image else (args.scene or ("city" if args.style in ("future", "walker") else "neon"))
     opts = dict(title=args.title, subtitle=args.subtitle, seed=args.seed, hue=args.hue)
+    if kind == "city" and args.style == "walker":
+        opts["snow"] = True
     if args.image:
         opts["image"] = args.image
     suffix = "_landscape" if args.landscape else ""
@@ -90,14 +101,14 @@ def main() -> int:
 
     if not args.image:
         print("[+] サムネイルを作成中…（a/b/c の3種類）")
-        bpm = f"{args.bpm or (140 if args.style in ('hard', 'future') else 128):g}"
+        bpm = f"{args.bpm or {'hard': 140, 'future': 140, 'walker': 90}.get(args.style, 128):g}"
         make_thumbnails(audio, args.title, args.out / f"{slug}{suffix}", genre=genre, bpm=bpm, seed=args.seed, hue=args.hue,
                         scene=kind)
 
     meta = {
-        "title": f"{args.title} | {genre if args.style in ('edm', 'future') else genre.title()} Original Track",
+        "title": f"{args.title} | {genre if args.style in ('edm', 'future', 'walker') else genre.title()} Original Track",
         "description": (
-            f"{args.title} — プログラムで自動作曲したオリジナルの{genre if args.style in ('edm', 'future') else genre.title()}曲と、"
+            f"{args.title} — プログラムで自動作曲したオリジナルの{genre if args.style in ('edm', 'future', 'walker') else genre.title()}曲と、"
             "音に合わせて動くネオンのイラスト。\n\n#synthwave #darksynth #retrowave"
             + ("" if args.landscape else " #shorts")
         ),
