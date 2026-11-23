@@ -127,8 +127,11 @@ def build(ep_path: Path, out: Path, workdir: Path, preview: tuple[float, float] 
             seg_i += 1
         seg = timeline[seg_i] if now >= timeline[0]["start"] else None
         b = seg["beat"] if seg else {}
-        if seg and "hud" in b and b["hud"] != hud_value:
-            hud_value, hud_changed = b["hud"], seg["start"]
+        if seg:
+            # その時点で有効なメーターの値（途中から作るときも正しく出す）
+            cur = next((timeline[j]["beat"]["hud"] for j in range(seg_i, -1, -1) if "hud" in timeline[j]["beat"]), None)
+            if cur != hud_value:
+                hud_value, hud_changed = cur, seg["start"]
         img = bg.frame(now)
         if seg and seg["shot"]:
             if seg["shot_start"] != prev_shot_start:

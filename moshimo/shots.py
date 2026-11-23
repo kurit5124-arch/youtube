@@ -80,7 +80,7 @@ def shot_mascot(img, s, t, accent):
         _icons_around(img, s, t, cx, cy)
     if s.get("text"):
         tx = W / 2 if side == "center" else (W * 0.72 if side == "left" else W * 0.28)
-        ty = 150 if side == "center" else H / 2 - 40
+        ty = 195 if side == "center" else H / 2 - 40
         sp = text_sprite(s["text"], s.get("size", 76), (255, 255, 255), 9, INK, max_w=820 if side != "center" else 1600)
         paste_center(img, sp, tx, ty, appear(t, 0.35))
 
@@ -100,7 +100,7 @@ def shot_equal(img, s, t, accent):
     paste_center(img, text_sprite(sign, 150, accent, 10, INK), W / 2, H / 2 - 30,
                  appear(t, 0.15 + float(s.get("delay", 0.9)) * 0.6, 0.4))
     if s.get("text"):
-        paste_center(img, text_sprite(s["text"], 64, (255, 255, 255), 8, INK), W / 2, 130, appear(t, 0.1))
+        paste_center(img, text_sprite(s["text"], 64, (255, 255, 255), 8, INK), W / 2, 195, appear(t, 0.1))
 
 
 _NUM = re.compile(r"\d[\d,]*")
@@ -152,14 +152,14 @@ def shot_icons(img, s, t, accent):
             paste_center(img, text_sprite(it["text"], 56, (255, 255, 255), 7, INK, max_w=int(gap - 30)),
                          x, H / 2 + 140, sc)
     if s.get("text"):
-        paste_center(img, text_sprite(s["text"], 72, (255, 255, 255), 9, INK), W / 2, 150, appear(t, 0.0))
+        paste_center(img, text_sprite(s["text"], 72, (255, 255, 255), 9, INK), W / 2, 195, appear(t, 0.0))
 
 
 def shot_list(img, s, t, accent):
     """チェックつきの箇条書き。1行ずつ出る。"""
     items = s["items"]
     if s.get("title"):
-        paste_center(img, text_sprite(s["title"], 76, (255, 255, 255), 9, INK), W / 2, 170, appear(t, 0.0))
+        paste_center(img, text_sprite(s["title"], 76, (255, 255, 255), 9, INK), W / 2, 195, appear(t, 0.0))
     paste_center(img, card(1300, 140 * len(items) + 80), W / 2, H / 2 + 50, appear(t, 0.1, 0.4))
     top = H / 2 + 50 - (140 * len(items)) / 2 + 70
     for k, it in enumerate(items):
@@ -199,7 +199,7 @@ def shot_brain(img, s, t, accent):
             r = 10 * (1 - p) + 3
             d.ellipse([x - r, y - r, x + r, y + r], fill=(120, 200, 255, int(220 * (1 - p))))
     if s.get("text"):
-        paste_center(img, text_sprite(s["text"], 72, (255, 255, 255), 9, INK), W / 2, 140, appear(t, 0.3))
+        paste_center(img, text_sprite(s["text"], 72, (255, 255, 255), 9, INK), W / 2, 195, appear(t, 0.3))
 
 
 def shot_warning(img, s, t, accent):
@@ -236,7 +236,7 @@ def shot_newspaper(img, s, t, accent):
         if y > h - 70:
             break
         d.rectangle([80, y, 80 + rng.randint(600, 940), y + 14], fill=(170, 160, 140))
-    paste_center(img, c, W / 2 + 120, H / 2 + 20, sc, angle=-4 + _float(t, amp=1, speed=0.8))
+    paste_center(img, c.resize((990, 684)), W / 2 + 120, H / 2 - 20, sc, angle=-4 + _float(t, amp=1, speed=0.8))
     if s.get("year"):
         paste_center(img, text_sprite(s["year"], 110, accent, 10, INK), 330, 230, appear(t, 0.4))
 
