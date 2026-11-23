@@ -121,8 +121,10 @@ def plan_today(date: dt.date, cfg: dict, wikitext_src: str | None = None) -> Vid
 
     md = f"{date.month}月{date.day}日"
     if quiz:
-        best = wikitext.best_observance(obs) if tc.get("include_observance", True) else None
-        return _quiz_today(date, md, picked, best, cfg, rng)
+        use_obs = tc.get("include_observance", True)
+        best = wikitext.best_observance(obs) if use_obs else None
+        jp_list = [(n, d) for n, d, jp in obs if jp] if use_obs else []
+        return _quiz_today(date, md, picked, best, cfg, rng, holiday=japan_holiday(date), jp_list=jp_list)
     scenes = [Scene(kind="hook", label="TODAY", text=f"{md}は\n何の日？",
                     narration=f"今日、{md}は何の日？思わず話したくなる出来事を紹介します。")]
 
@@ -192,19 +194,45 @@ def _first_sentences(text: str, limit: int) -> str:
     return out or _shorten(text, limit)
 
 
-def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
-    """obs = (記念日の名前, 説明) または None"""
+def japan_holiday(date: dt.date) -> str | None:
+    """日本の祝日ならその名前（振替休日も含む）。"""
+    try:
+        import jpholiday
+    except ImportError:
+        return None
+    return jpholiday.is_holiday_name(date)
+
+
+def _quiz_today(date, md, picked, obs, cfg, rng, holiday: str | None = None,
+                jp_list: list[tuple[str, str]] | None = None) -> VideoPlan:
+    """obs = (記念日の名前, 説明) または None。holiday = 祝日名。jp_list = 日本の記念日 [(名前, 説明)]"""
+    tc = cfg.get("today", {})
+    jp_list = jp_list or []
+    if holiday:
+        # 祝日を一番に紹介する（説明は Wikipedia の記念日欄から探す）
+        desc = next((d for n, d in jp_list + ([obs] if obs else []) if d and (holiday in n or n in holiday)), "")
+        obs = (holiday, desc or "国民の祝日です。")
     obs_name, obs_desc = obs if obs else ("", "")
-    obs_emoji = illust.pick_one(obs_name + obs_desc, fallback="📅") if obs else "📅"
+    obs_emoji = illust.pick_one(obs_name + obs_desc, fallback="🎌" if holiday else "📅") if obs else "📅"
 
-    scenes = [Scene(kind="hook", label="3択クイズ", text=f"{md}は\n何の日？", emoji=obs_emoji,
-                    narration=f"今日、{md}は何の日？3択クイズに挑戦！")]
+    hook_narr = (f"今日、{md}は祝日、{holiday}！3択クイズに挑戦！" if holiday
+                 else f"今日、{md}は何の日？3択クイズに挑戦！")
+    scenes = [Scene(kind="hook", label="3択クイズ", text=f"{md}は\n何の日？", emoji=obs_emoji, narration=hook_narr)]
 
-    # 今日は何の日かの説明
+    # 今日は何の日かの説明（祝日なら祝日）
     if obs:
-        desc = _first_sentences(obs_desc, cfg.get("today", {}).get("observance_max_chars", 70)) if obs_desc else ""
-        scenes.append(Scene(kind="item", label="今日は何の日", text=f"「{obs_name}」", subtext=desc, emoji=obs_emoji,
+        desc = _first_sentences(obs_desc, tc.get("observance_max_chars", 70)) if obs_desc else ""
+        scenes.append(Scene(kind="item", label="今日は祝日" if holiday else "今日は何の日",
+                            text=f"「{obs_name}」", subtext=desc, emoji=obs_emoji,
                             narration=_sentence(f"今日は、{obs_name}") + (_sentence(desc) if desc else "")))
+
+    # ほかの日本の記念日
+    others = [n for n, _ in jp_list if n != obs_name and not (holiday and (holiday in n or n in holiday))]
+    others = [n if len(n) <= 18 else n[:17] + "…" for n in dict.fromkeys(others)][: int(tc.get("jp_observances_max", 3))]
+    if others:
+        scenes.append(Scene(kind="item", label="日本の記念日", text="\n".join(f"・{n}" for n in others),
+                            emoji=illust.pick_one("".join(others), fallback="🗓️"),
+                            narration="ほかにも今日は、" + "、".join(others) + "です。"))
 
     answers = []
     for n, (y, t) in enumerate(picked, 1):
@@ -227,7 +255,10 @@ def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
 
     lines = [f"{md}は何の日？出来事が何年か当てる3択クイズに挑戦！", "何問わかったかコメントで教えてね。", ""]
     if obs:
-        lines += [f"■ 今日は「{obs_name}」", obs_desc, ""] if obs_desc else [f"■ 今日は「{obs_name}」", ""]
+        head = f"■ 今日は祝日「{obs_name}」" if holiday else f"■ 今日は「{obs_name}」"
+        lines += [head, obs_desc, ""] if obs_desc else [head, ""]
+    if others:
+        lines += ["■ 日本の記念日：" + "、".join(others), ""]
     lines += ["▼ クイズの答え（ネタバレ注意）", "", "", ""]
     lines += [f"■ {_year_str(y)}：{t}" for y, t in answers]
     lines += ["", f"出典：Wikipedia「{md}」 https://ja.wikipedia.org/wiki/{md}",
@@ -237,13 +268,15 @@ def _quiz_today(date, md, picked, obs, cfg, rng) -> VideoPlan:
     emojis = [obs_emoji] + [s.emoji for s in scenes if s.choices and s.emoji not in ("❓",)]
     plan = VideoPlan(
         header="今日は何の日クイズ", subheader=md, scenes=scenes,
-        title=(f"【今日は何の日】{md}は{obs_name}！3択クイズ #shorts" if obs
+        title=(f"【今日は何の日】{md}は祝日「{obs_name}」！3択クイズ #shorts" if holiday
+               else f"【今日は何の日】{md}は{obs_name}！3択クイズ #shorts" if obs
                else f"【3択クイズ】{md}の出来事、何年かわかる？ #shorts"),
         description="\n".join(lines),
-        tags=["クイズ", "3択クイズ", "今日は何の日", md, obs_name, "雑学", "歴史", "shorts"],
+        tags=["クイズ", "3択クイズ", "今日は何の日", md, obs_name, *others, "祝日" if holiday else "記念日",
+              "雑学", "歴史", "shorts"],
         seed=date.toordinal(),
         emojis=list(dict.fromkeys(emojis)),
-        max_seconds=float(cfg.get("today", {}).get("quiz_max_seconds", 90)),
+        max_seconds=float(tc.get("quiz_max_seconds", 100)),
     )
     return plan
 
