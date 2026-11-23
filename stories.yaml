@@ -111,3 +111,97 @@
     ※当事者の方への誹謗中傷はおやめください。
 
     #納得できない判決 #実話 #裁判 #自転車保険 #shorts
+
+- title: 校庭のボール事故で親に賠償…最高裁で逆転
+  header: 納得できない判決
+  subheader: "実話ファイル #2"
+  youtube_title: 【実話】子どもが蹴ったボールで事故…親に1000万円超の賠償、最高裁で逆転 #shorts
+  bgm: assets/bgm_dark/01_serious_ambient.mp3
+  category_id: 27
+  scenes:
+    - label: 実話
+      narration: 子どもが蹴ったボールで事故。親に1000万円を超える賠償命令。でも最後に、まさかの逆転。
+      art:
+        bg: school
+        big: 1000万円超！？
+        big_y: 1010
+        cast:
+          - {who: mother, expr: shock, x: 0.25, scale: 0.9, y: 1830, fx: "❗"}
+          - {who: man, expr: shock, x: 0.75, scale: 0.9, y: 1830, flip: true, fx: "💦"}
+    - label: 2004年 愛媛県今治市
+      narration: 2004年、愛媛県今治市。小学5年生の男の子が、校庭でサッカーボールを蹴りました。
+      art:
+        bg: school
+        cast:
+          - {who: child, expr: happy, x: 0.4, scale: 0.9, fx: "⚽"}
+    - label: 事故
+      narration: ボールは門を越えて道路へ。よけようとしたバイクの85歳の男性が転倒し、その後亡くなりました。
+      art:
+        bg: street
+        shake: true
+        cast:
+          - {who: elder_man, expr: shock, x: 0.62, fx: "⚽"}
+          - {who: child, expr: worried, x: 0.2, scale: 0.85, fx: "💦"}
+    - label: 1審・2審
+      narration: 遺族が訴え、1審と2審は、両親に1000万円を超える賠償を命じました。
+      art:
+        bg: courtroom
+        speaker: 0
+        cast:
+          - {who: judge, expr: serious, x: 0.5}
+    - label: 「納得できない」という声
+      narration: ただ遊んでいただけで、親が責任を負うのはおかしい、という声が上がりました。
+      art:
+        bg: net
+        speaker: 0
+        cast:
+          - {who: man, expr: angry, x: 0.32, fx: "💢"}
+          - {who: mother, expr: worried, x: 0.72, flip: true, fx: "💦"}
+    - label: 遺族の立場では
+      narration: 一方、遺族からすれば、家族が亡くなったのに誰も責任を取らないのは納得できません。
+      art:
+        bg: net
+        speaker: 0
+        cast:
+          - {who: woman, expr: sad, x: 0.32}
+          - {who: man2, expr: sad, x: 0.72, flip: true}
+    - label: 2015年 最高裁
+      narration: そして2015年、最高裁は、普通の遊びで偶然起きた事故まで親は責任を負わないとして、逆転で両親の責任を認めませんでした。
+      art:
+        bg: courtroom
+        speaker: 0
+        big: 逆転判決
+        big_y: 1580
+        big_color: [255, 200, 40]
+        cast:
+          - {who: judge, expr: serious, x: 0.5}
+    - label: あなたはどう思う？
+      text: この逆転判決、納得できる？
+      choices: [納得できる, 納得できない]
+      narration: この逆転判決、あなたは納得できますか？Aなら納得、Bなら納得できない。
+    - label: 次回
+      narration: 次回も、納得できない判決を紹介します。
+      art:
+        bg: home
+        speaker: 1
+        cast:
+          - {who: mother, expr: neutral, x: 0.3}
+          - {who: child, expr: happy, x: 0.7, scale: 0.85, flip: true, fx: "⚽"}
+  tags: [納得できない判決, 実話, 裁判, 最高裁, 逆転判決, 親の責任, shorts]
+  description: |
+    子どもが校庭で蹴ったボールが原因の事故で、両親に1000万円を超える賠償命令。ところが最高裁で逆転…。あなたはこの判決、納得できますか？
+    コメントに「A（納得できる）」か「B（納得できない）」と、理由を書いてください。
+
+    ■ 事故（2004年・愛媛県今治市）
+    小学5年生の男の子が校庭でサッカーボールを蹴り、ボールが門を越えて道路へ。よけようとしたバイクの85歳の男性が転倒し、その後亡くなりました。
+
+    ■ 1審・2審
+    遺族が両親を訴え、両親に1000万円を超える賠償を命じました。
+
+    ■ 最高裁（2015年）
+    普通の遊びで偶然起きた事故については、親が監督の責任を怠ったとはいえないとして、両親の責任を認めませんでした。
+
+    ※報道をもとに要約しています。イラストはイメージです。
+    ※当事者の方への誹謗中傷はおやめください。
+
+    #納得できない判決 #実話 #裁判 #最高裁 #shorts

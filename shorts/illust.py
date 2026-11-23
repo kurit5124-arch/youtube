@@ -1,8 +1,8 @@
 """コードで描くイラスト（背景と、表情のある人物）。
 
 画像生成サービスを使わずに、Pillow だけで描く。
-- 背景: street（街の道路）/ courtroom（法廷）/ hospital（病室）/ net（ネットの声）/ home（部屋）
-- 人物: child / woman / elder_woman / man / judge
+- 背景: school（校庭）/ street（街の道路）/ courtroom（法廷）/ hospital（病室）/ net（ネットの声）/ home（部屋）
+- 人物: child / woman / mother / elder_woman / elder_man / man / man2 / judge
 - 表情: neutral / happy / angry / sad / shock / worried / serious（talking=True で口が開く）
 """
 from __future__ import annotations
@@ -130,7 +130,32 @@ def _home(rng) -> tuple[Image.Image, Image.Image | None]:
     return img, None
 
 
-BACKGROUNDS = {"street": _street, "courtroom": _courtroom, "hospital": _hospital, "net": _net, "home": _home}
+def _school(rng) -> tuple[Image.Image, Image.Image | None]:
+    img = _grad((150, 205, 245), (235, 245, 255))
+    d = ImageDraw.Draw(img)
+    d.rectangle([60, 640, 1020, 1150], fill=(245, 240, 228), outline=INK, width=6)  # 校舎
+    d.rectangle([60, 600, 1020, 650], fill=(200, 90, 70), outline=INK, width=6)
+    d.ellipse([W / 2 - 55, 680, W / 2 + 55, 790], fill=(255, 255, 255), outline=INK, width=5)  # 時計
+    d.line([(W / 2, 735), (W / 2, 700)], fill=INK, width=5)
+    d.line([(W / 2, 735), (W / 2 + 25, 745)], fill=INK, width=5)
+    for row in (830, 990):
+        for x in range(110, 980, 150):
+            d.rectangle([x, row, x + 100, row + 100], fill=(180, 215, 240), outline=INK, width=4)
+    d.rectangle([0, 1150, W, H], fill=(214, 186, 140))  # 校庭
+    for x in range(0, W, 60):  # フェンス
+        d.line([(x, 1080), (x, 1180)], fill=(110, 120, 110), width=4)
+    d.line([(0, 1090), (W, 1090)], fill=(110, 120, 110), width=5)
+    d.line([(0, 1170), (W, 1170)], fill=(110, 120, 110), width=5)
+    gx, gy = 640, 1200  # サッカーゴール
+    d.rectangle([gx, gy, gx + 380, gy + 230], outline=(255, 255, 255), width=12)
+    for k in range(1, 8):
+        d.line([(gx + k * 47, gy), (gx + k * 47, gy + 230)], fill=(255, 255, 255, 140), width=3)
+    for k in range(1, 5):
+        d.line([(gx, gy + k * 46), (gx + 380, gy + k * 46)], fill=(255, 255, 255, 140), width=3)
+    return img, None
+
+
+BACKGROUNDS = {"school": _school, "street": _street, "courtroom": _courtroom, "hospital": _hospital, "net": _net, "home": _home}
 
 
 @lru_cache(maxsize=16)
@@ -145,6 +170,7 @@ LOOKS = {
     "woman": ("long", (90, 60, 45), (240, 150, 170)),
     "mother": ("bob", (70, 50, 40), (250, 190, 110)),
     "elder_woman": ("bun", (190, 190, 195), (150, 120, 180)),
+    "elder_man": ("short", (205, 205, 210), (140, 120, 95)),
     "man": ("short", (40, 40, 45), (90, 110, 140)),
     "man2": ("short", (110, 75, 50), (110, 170, 120)),
     "judge": ("judge", (150, 150, 155), (30, 30, 36)),
